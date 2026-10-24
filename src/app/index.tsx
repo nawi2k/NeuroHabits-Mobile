@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,27 +11,37 @@ import {
 
 const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
 
-const FRASES_GOGGINS_SUCCESS = [
-  "Stay Hard! Te estás volviendo imparable.",
-  "Estás construyendo callos en la mente. ¡Sigue empujando!",
-  "Rompiendo tus propios límites. ¡Eso es mentalidad de 1%!",
-  "No paren cuando estén cansados, paren cuando hayan TERMINADO.",
-  "La única persona en el espejo puede frenarte. ¡Bien hecho!",
+const FRASES_GOGGINS = [
+  "«El crecimiento solo vive del otro lado del sufrimiento.»",
+  "«David Goggins corrió 160 kilómetros con las rótulas destrozadas. ¿Y vos decís que estás cansado?»",
+  "«Tu cerebro te miente diciendo que no podés más. Apenas vas por el 40%.»",
+  "«Si buscas comodidad, estás eligiendo la mediocridad.»",
 ];
 
-const FRASES_GOGGINS_FAIL = [
-  "¿En serio? ¿Sos una perra o querés cambiar?",
-  "¡Puras excusas! Tu sistema límbico te está gobernando.",
-  "Nadie viene a salvarte. ¡Levantate y hacé lo que tenés que hacer!",
-  "¿Realmente querías mejorar o era mentira?",
-  "Estás cómodo y por eso estás perdiendo. ¡Stay Hard!",
+const RANGOS_GOGGINS = [
+  { nivel: 1, meta: 50, nombre: "NIVEL 1: ZONA DE CONFORT", desc: "Meta: 50%" },
+  {
+    nivel: 2,
+    meta: 60,
+    nombre: "NIVEL 2: ESTABLECIENDO BASES",
+    desc: "Meta: 60%",
+  },
+  {
+    nivel: 3,
+    meta: 70,
+    nombre: "NIVEL 3: CALLOUS YOUR MIND",
+    desc: "Meta: 70%",
+  },
+  { nivel: 4, meta: 80, nombre: "NIVEL 4: EL 1% MÁS DURO", desc: "Meta: 80%" },
+  { nivel: 5, meta: 90, nombre: "NIVEL MAX: STAY HARD!", desc: "Meta: 90%" },
 ];
 
 export default function App() {
   const [habitos, setHabitos] = useState<any[]>([]);
-  const [fraseActual, setFraseActual] = useState(
-    "«El crecimiento solo vive del otro lado del sufrimiento.»",
-  );
+  const [fraseIdx, setFraseIdx] = useState(0);
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const [modalAyudaVisible, setModalAyudaVisible] = useState(false);
+  const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
 
   useEffect(() => {
     cargarDatos();
@@ -38,30 +49,35 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V2");
       if (stored) {
         setHabitos(JSON.parse(stored));
       } else {
         const iniciales = [
           {
             id: 1,
-            nombre: "Entrenar / Boxeo",
+            nombre: "Levantarme a las 08:30",
             checks: [null, null, null, null, null, null, null],
           },
           {
             id: 2,
-            nombre: "Lectura diaria",
+            nombre: "Correr 10 AM",
             checks: [null, null, null, null, null, null, null],
           },
           {
             id: 3,
-            nombre: "Cero azúcar",
+            nombre: "Comer bien",
+            checks: [null, null, null, null, null, null, null],
+          },
+          {
+            id: 4,
+            nombre: "Dormir temprano",
             checks: [null, null, null, null, null, null, null],
           },
         ];
         setHabitos(iniciales);
         await AsyncStorage.setItem(
-          "NEURO_HABITS_MOBILE",
+          "NEURO_HABITS_MOBILE_V2",
           JSON.stringify(iniciales),
         );
       }
@@ -74,7 +90,7 @@ export default function App() {
     setHabitos(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE",
+        "NEURO_HABITS_MOBILE_V2",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -82,210 +98,334 @@ export default function App() {
     }
   };
 
-  const manejarClickCelda = (
-    hIdx: number,
-    dIdx: number,
-    tipo: "YES" | "NO",
-  ) => {
+  // Ciclo de 3 estados: null -> YES -> NO -> null
+  const manejarClickCelda = (hIdx: number, dIdx: number) => {
     const nuevos = [...habitos];
     const actual = nuevos[hIdx].checks[dIdx];
 
-    if (tipo === "YES") {
-      nuevos[hIdx].checks[dIdx] = actual === "YES" ? null : "YES";
-      const frase =
-        FRASES_GOGGINS_SUCCESS[
-          Math.floor(Math.random() * FRASES_GOGGINS_SUCCESS.length)
-        ];
-      setFraseActual(frase);
+    if (actual === null) {
+      nuevos[hIdx].checks[dIdx] = "YES"; // 1er toque: Cumplido
+    } else if (actual === "YES") {
+      nuevos[hIdx].checks[dIdx] = "NO"; // 2do toque: Fallado
     } else {
-      nuevos[hIdx].checks[dIdx] = actual === "NO" ? null : "NO";
-      const frase =
-        FRASES_GOGGINS_FAIL[
-          Math.floor(Math.random() * FRASES_GOGGINS_FAIL.length)
-        ];
-      setFraseActual(frase);
+      nuevos[hIdx].checks[dIdx] = null; // 3er toque: Vacío
     }
 
     guardarYActualizar(nuevos);
   };
 
-  const totalChecksPosibles = habitos.length * 7;
-  let totalHechos = 0;
+  const totalChecks = habitos.length * 7;
+  let cumplidos = 0;
+  let fallados = 0;
   habitos.forEach((h) => {
-    totalHechos += h.checks.filter((c: string) => c === "YES").length;
+    cumplidos += h.checks.filter((c: string) => c === "YES").length;
+    fallados += h.checks.filter((c: string) => c === "NO").length;
   });
-  const porcentajeTotal =
-    totalChecksPosibles > 0
-      ? Math.round((totalHechos / totalChecksPosibles) * 100)
-      : 0;
+
+  const pctPrefrontal =
+    totalChecks > 0 ? Math.round((cumplidos / totalChecks) * 100) : 0;
+  const pctLimbico =
+    totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.mainContainer}>
+      {/* HEADER PRINCIPAL */}
       <View style={styles.header}>
-        <Text style={styles.title}>NEURO HABITS</Text>
-        <Text style={styles.subtitle}>STAY HARD 💀</Text>
-      </View>
+        <TouchableOpacity
+          onPress={() => setMenuAbierto(true)}
+          style={styles.menuButton}
+        >
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
 
-      <View style={styles.quoteCard}>
-        <Text style={styles.quoteText}>{fraseActual}</Text>
-      </View>
-
-      <View style={styles.progressContainer}>
-        <Text style={styles.progressTitle}>
-          PROGRESO SEMANAL: {porcentajeTotal}%
-        </Text>
-        <View style={styles.progressBarBackground}>
-          <View
-            style={[styles.progressBarFill, { width: `${porcentajeTotal}%` }]}
-          />
+        <View style={styles.headerTitles}>
+          <Text style={styles.title}>NEURO HABITS</Text>
+          <Text style={styles.subtitle}>created by sandev</Text>
         </View>
+
+        <TouchableOpacity
+          onPress={() => setModalAyudaVisible(true)}
+          style={styles.helpButton}
+        >
+          <Text style={styles.helpIcon}>?</Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.tableContainer}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.headerCell, { flex: 2 }]}>Hábito</Text>
-          {DIAS.map((d, i) => (
-            <Text key={i} style={styles.headerDay}>
-              {d}
+      <ScrollView style={styles.container}>
+        {/* FRASES MOTIVACIONALES */}
+        <TouchableOpacity
+          style={styles.quoteCard}
+          onPress={() =>
+            setFraseIdx((prev) => (prev + 1) % FRASES_GOGGINS.length)
+          }
+        >
+          <Text style={styles.quoteText}>{FRASES_GOGGINS[fraseIdx]}</Text>
+          <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
+        </TouchableOpacity>
+
+        {/* SECCIÓN CEREBRO Y NEUROQUÍMICA */}
+        <View style={styles.brainCard}>
+          <View style={styles.brainHeader}>
+            <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
+            <TouchableOpacity onPress={() => setModalAyudaVisible(true)}>
+              <Text style={styles.smallQuestion}>?</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.brainStatsRow}>
+            <Text style={styles.brainStatText}>
+              Prefrontal:{" "}
+              <Text style={{ color: "#00f0ff" }}>{pctPrefrontal}%</Text>
             </Text>
+            <Text style={styles.brainStatText}>
+              Límbico: <Text style={{ color: "#ff0055" }}>{pctLimbico}%</Text>
+            </Text>
+          </View>
+        </View>
+
+        {/* PLANILLA DE HÁBITOS */}
+        <View style={styles.tableContainer}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.headerCell, { flex: 2 }]}>Hábitos</Text>
+            {DIAS.map((d, i) => (
+              <Text key={i} style={styles.headerDay}>
+                {d}
+              </Text>
+            ))}
+          </View>
+
+          {habitos.map((h, hIdx) => (
+            <View key={h.id} style={styles.tableRow}>
+              <Text style={styles.habitoNombre} numberOfLines={1}>
+                {h.nombre}
+              </Text>
+              {h.checks.map((chk: string | null, dIdx: number) => {
+                let cellStyle: any = styles.cell;
+                let simbol = "";
+
+                if (chk === "YES") {
+                  cellStyle = [styles.cell, styles.cellYes];
+                  simbol = "✔";
+                } else if (chk === "NO") {
+                  cellStyle = [styles.cell, styles.cellNo];
+                  simbol = "✖";
+                }
+
+                return (
+                  <TouchableOpacity
+                    key={dIdx}
+                    style={cellStyle}
+                    onPress={() => manejarClickCelda(hIdx, dIdx)}
+                  >
+                    <Text style={styles.cellText}>{simbol}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           ))}
         </View>
 
-        {habitos.map((h, hIdx) => (
-          <View key={h.id} style={styles.tableRow}>
-            <Text style={styles.habitoNombre} numberOfLines={1}>
-              {h.nombre}
-            </Text>
-            {h.checks.map((chk: string | null, dIdx: number) => {
-              let cellStyle: any = styles.cell;
-              let simbol = "";
+        <Text style={styles.instructionFooter}>
+          💡 1 toque: Cumplido (✔) | 2 toques: Fallado (✖) | 3 toques: Vacío
+        </Text>
+      </ScrollView>
 
-              if (chk === "YES") {
-                cellStyle = [styles.cell, styles.cellYes];
-                simbol = "✔";
-              } else if (chk === "NO") {
-                cellStyle = [styles.cell, styles.cellNo];
-                simbol = "✖";
-              }
+      {/* MENÚ HAMBURGUESA LATERAL (DRAWER) */}
+      <Modal visible={menuAbierto} animationType="slide" transparent={true}>
+        <View style={styles.drawerOverlay}>
+          <View style={styles.drawerContent}>
+            <View style={styles.drawerHeader}>
+              <Text style={styles.drawerTitle}>⚡ Menú & Rangos</Text>
+              <TouchableOpacity onPress={() => setMenuAbierto(false)}>
+                <Text style={styles.closeButton}>✕</Text>
+              </TouchableOpacity>
+            </View>
 
-              return (
-                <TouchableOpacity
-                  key={dIdx}
-                  style={cellStyle}
-                  onPress={() => manejarClickCelda(hIdx, dIdx, "YES")}
-                  onLongPress={() => manejarClickCelda(hIdx, dIdx, "NO")}
+            <ScrollView>
+              <Text style={styles.sectionTitle}>🏆 Progreso de Rangos</Text>
+              {RANGOS_GOGGINS.map((r) => (
+                <View key={r.nivel} style={styles.rangoItem}>
+                  <Text style={styles.rangoNombre}>{r.nombre}</Text>
+                  <Text style={styles.rangoDesc}>
+                    {r.desc} (Requieres {r.meta}% de corteza prefrontal)
+                  </Text>
+                </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.gogginsPhotoCard}
+                onPress={() => setModalGogginsVisible(true)}
+              >
+                <Text
+                  style={{
+                    color: "#00f0ff",
+                    fontWeight: "bold",
+                    textAlign: "center",
+                  }}
                 >
-                  <Text style={styles.cellText}>{simbol}</Text>
-                </TouchableOpacity>
-              );
-            })}
+                  📸 Ver Mentor en Grande (Goggins)
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
-        ))}
-      </View>
+        </View>
+      </Modal>
 
-      <Text style={styles.helpInstruction}>
-        💡 Tocá una casilla para cumplir (✔). Mantené presionado para marcar
-        fallo (✖).
-      </Text>
-    </ScrollView>
+      {/* MODAL FOTO GOGGINS GRANDE */}
+      <Modal
+        visible={modalGogginsVisible}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <Text
+              style={{
+                color: "#fff",
+                fontSize: 16,
+                marginBottom: 10,
+                textAlign: "center",
+              }}
+            >
+              STAY HARD 💀
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalGogginsVisible(false)}
+              style={styles.closeBtnModal}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                CERRAR ✕
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL DE AYUDA / EXPLICACIÓN */}
+      <Modal
+        visible={modalAyudaVisible}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <Text style={styles.modalTitle}>
+              🧠 Corteza Prefrontal vs Sistema Límbico
+            </Text>
+            <Text style={styles.modalText}>
+              • Corteza Prefrontal: Es la parte del cerebro de la disciplina, el
+              foco y el cumplimiento de metas a largo plazo (✔).{"\n\n"}•
+              Sistema Límbico: Es el que busca la comodidad, el placer inmediato
+              y pone excusas (✖).{"\n\n"}
+              Tu objetivo es dominar tu mente y elevar tu prefrontal por encima
+              del 70%.
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalAyudaVisible(false)}
+              style={styles.closeBtnModal}
+            >
+              <Text style={{ color: "#00f0ff", fontWeight: "bold" }}>
+                ENTENDIDO
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#090d16",
-    paddingHorizontal: 16,
-    paddingTop: 40,
-  },
+  mainContainer: { flex: 1, backgroundColor: "#090d16" },
   header: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingTop: 45,
+    paddingBottom: 15,
+    backgroundColor: "#090d16",
+    borderBottomWidth: 1,
+    borderBottomColor: "#1f2937",
   },
+  menuButton: { padding: 8 },
+  menuIcon: { color: "#00f0ff", fontSize: 22 },
+  headerTitles: { alignItems: "center" },
   title: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "bold",
     color: "#00f0ff",
-    letterSpacing: 2,
+    letterSpacing: 1,
   },
-  subtitle: {
-    fontSize: 12,
-    color: "#94a3b8",
-    letterSpacing: 4,
-    marginTop: 4,
+  subtitle: { fontSize: 10, color: "#94a3b8", letterSpacing: 2 },
+  helpButton: {
+    backgroundColor: "#1f2937",
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    justifyContent: "center",
+    alignItems: "center",
   },
+  helpIcon: { color: "#00f0ff", fontWeight: "bold" },
+  container: { flex: 1, padding: 16 },
   quoteCard: {
     backgroundColor: "#111827",
     borderRadius: 8,
-    padding: 14,
-    borderLeftWidth: 4,
+    padding: 12,
+    borderLeftWidth: 3,
     borderLeftColor: "#00f0ff",
-    marginBottom: 20,
+    marginBottom: 15,
   },
   quoteText: {
     color: "#e2e8f0",
-    fontSize: 13,
+    fontSize: 12,
     fontStyle: "italic",
     textAlign: "center",
   },
-  progressContainer: {
+  quoteHint: {
+    color: "#64748b",
+    fontSize: 9,
+    textAlign: "center",
+    marginTop: 4,
+  },
+  brainCard: {
     backgroundColor: "#111827",
-    padding: 14,
     borderRadius: 8,
-    marginBottom: 20,
+    padding: 12,
+    marginBottom: 15,
   },
-  progressTitle: {
-    color: "#00f0ff",
-    fontSize: 12,
-    fontWeight: "bold",
-    marginBottom: 8,
+  brainHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 6,
   },
-  progressBarBackground: {
-    height: 8,
-    backgroundColor: "#1f2937",
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  progressBarFill: {
-    height: "100%",
-    backgroundColor: "#00f0ff",
-  },
+  brainTitle: { color: "#fff", fontSize: 13, fontWeight: "bold" },
+  smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
+  brainStatsRow: { flexDirection: "row", justifyContent: "space-around" },
+  brainStatText: { color: "#94a3b8", fontSize: 12, fontWeight: "600" },
   tableContainer: {
     backgroundColor: "#111827",
     borderRadius: 8,
     padding: 10,
-    marginBottom: 20,
+    marginBottom: 15,
   },
   tableHeader: {
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#1f2937",
-    paddingBottom: 8,
-    marginBottom: 8,
+    paddingBottom: 6,
+    marginBottom: 6,
   },
-  headerCell: {
-    color: "#94a3b8",
-    fontWeight: "bold",
-    fontSize: 12,
-  },
+  headerCell: { color: "#94a3b8", fontWeight: "bold", fontSize: 11 },
   headerDay: {
     flex: 1,
     textAlign: "center",
     color: "#94a3b8",
     fontWeight: "bold",
-    fontSize: 12,
+    fontSize: 11,
   },
-  tableRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-  },
-  habitoNombre: {
-    flex: 2,
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
+  tableRow: { flexDirection: "row", alignItems: "center", marginBottom: 8 },
+  habitoNombre: { flex: 2, color: "#fff", fontSize: 11, fontWeight: "600" },
   cell: {
     flex: 1,
     aspectRatio: 1,
@@ -305,15 +445,85 @@ const styles = StyleSheet.create({
     borderColor: "#ff0055",
     borderWidth: 1,
   },
-  cellText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  helpInstruction: {
+  cellText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  instructionFooter: {
     color: "#64748b",
-    fontSize: 11,
+    fontSize: 10,
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 30,
+  },
+  drawerOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "flex-start",
+  },
+  drawerContent: {
+    width: "80%",
+    height: "100%",
+    backgroundColor: "#111827",
+    padding: 20,
+    paddingTop: 50,
+  },
+  drawerHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  drawerTitle: { color: "#00f0ff", fontSize: 18, fontWeight: "bold" },
+  closeButton: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "bold",
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  rangoItem: {
+    backgroundColor: "#1f2937",
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  rangoNombre: { color: "#00f0ff", fontSize: 11, fontWeight: "bold" },
+  rangoDesc: { color: "#94a3b8", fontSize: 9, marginTop: 2 },
+  gogginsPhotoCard: {
+    backgroundColor: "#1f2937",
+    padding: 12,
+    borderRadius: 6,
+    marginTop: 15,
+    alignItems: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.8)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContentGrande: {
+    width: "85%",
+    backgroundColor: "#111827",
+    padding: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#00f0ff",
+  },
+  modalTitle: {
+    color: "#00f0ff",
+    fontSize: 15,
+    fontWeight: "bold",
+    marginBottom: 10,
+  },
+  modalText: {
+    color: "#d1d5db",
+    fontSize: 12,
+    lineHeight: 18,
+    marginBottom: 20,
+  },
+  closeBtnModal: {
+    backgroundColor: "#1f2937",
+    padding: 10,
+    borderRadius: 6,
+    alignItems: "center",
   },
 });
