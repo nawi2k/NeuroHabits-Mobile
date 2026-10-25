@@ -107,7 +107,6 @@ export default function App() {
   const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
-  // Referencias para las animaciones suaves de opacidad
   const animPrefrontal = useRef(new Animated.Value(0)).current;
   const animLimbico = useRef(new Animated.Value(0)).current;
 
@@ -117,7 +116,7 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V10");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V11");
       if (stored) {
         const parsed = JSON.parse(stored);
         setHabitos(parsed);
@@ -135,7 +134,7 @@ export default function App() {
     actualizarAnimaciones(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V10",
+        "NEURO_HABITS_MOBILE_V11",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -155,7 +154,6 @@ export default function App() {
     const targetPrefrontal = total > 0 ? Math.min(comp / total, 1) : 0;
     const targetLimbico = total > 0 ? Math.min(fail / total, 1) : 0;
 
-    // Animación fluida con timing (transición suave de color)
     Animated.parallel([
       Animated.timing(animPrefrontal, {
         toValue: targetPrefrontal,
@@ -248,7 +246,6 @@ export default function App() {
 
   return (
     <View style={styles.mainContainer}>
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
@@ -266,7 +263,6 @@ export default function App() {
       </View>
 
       <ScrollView style={styles.container}>
-        {/* FRASES MOTIVACIONALES */}
         <TouchableOpacity
           style={styles.quoteCard}
           onPress={cambiarFraseAleatoria}
@@ -275,7 +271,7 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON ANIMACIÓN FLUIDA Y CAPAS */}
+        {/* SECCIÓN CEREBRO CON IMAGEN ENCAJADA (RESIZE: CONTAIN) */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -285,19 +281,16 @@ export default function App() {
           </View>
 
           <View style={styles.brainImageContainer}>
-            {/* Imagen Base Estática */}
             <Image
               source={require("../../assets/images/brain_base.png")}
               style={styles.brainImage}
             />
 
-            {/* Capa Animada Corteza Prefrontal */}
             <Animated.Image
               source={require("../../assets/images/brain_prefrontal.png")}
               style={[styles.brainOverlay, { opacity: animPrefrontal }]}
             />
 
-            {/* Capa Animada Sistema Límbico */}
             <Animated.Image
               source={require("../../assets/images/brain_limbico.png")}
               style={[styles.brainOverlay, { opacity: animLimbico }]}
@@ -316,7 +309,6 @@ export default function App() {
           </View>
         </View>
 
-        {/* BOTÓN NUEVO HÁBITO */}
         <TouchableOpacity
           style={styles.btnAddHabit}
           onPress={() => setModalNuevoHabito(true)}
@@ -324,7 +316,6 @@ export default function App() {
           <Text style={styles.btnAddHabitText}>+ Nuevo Hábito</Text>
         </TouchableOpacity>
 
-        {/* PLANILLA DE HÁBITOS */}
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
             <Text style={[styles.headerCell, { flex: 2 }]}>Hábitos</Text>
@@ -385,7 +376,6 @@ export default function App() {
         </Text>
       </ScrollView>
 
-      {/* MENÚ HAMBURGUESA LATERAL */}
       <Modal visible={menuAbierto} animationType="slide" transparent={true}>
         <View style={styles.drawerOverlay}>
           <View style={styles.drawerContent}>
@@ -422,7 +412,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL FOTO GOGGINS GRANDE */}
       <Modal
         visible={modalGogginsVisible}
         animationType="fade"
@@ -462,7 +451,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL NUEVO HÁBITO */}
       <Modal visible={modalNuevoHabito} animationType="fade" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentGrande}>
@@ -504,7 +492,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL AYUDA */}
       <Modal
         visible={modalAyudaVisible}
         animationType="fade"
@@ -655,20 +642,22 @@ const styles = StyleSheet.create({
   brainTitle: { color: "#fff", fontSize: 13, fontWeight: "bold" },
   smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
 
-  // Contenedor estético y perfectamente encajado
+  // Imagen encajada perfectamente usando resizeMode: 'contain'
   brainImageContainer: {
     width: "100%",
-    height: 160,
+    height: 190,
     borderRadius: 6,
     overflow: "hidden",
     position: "relative",
     marginBottom: 12,
     backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
   },
   brainImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+    resizeMode: "contain",
   },
   brainOverlay: {
     position: "absolute",
@@ -676,7 +665,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: "100%",
     height: "100%",
-    resizeMode: "cover",
+    resizeMode: "contain",
   },
 
   brainStatsBox: { width: "100%", alignItems: "center" },
