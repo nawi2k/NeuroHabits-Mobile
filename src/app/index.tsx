@@ -111,7 +111,7 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V5");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V6");
       if (stored) {
         setHabitos(JSON.parse(stored));
       } else {
@@ -126,7 +126,7 @@ export default function App() {
     setHabitos(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V5",
+        "NEURO_HABITS_MOBILE_V6",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -197,12 +197,12 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
-  // Lógica de imágenes del cerebro según tu rendimiento
-  let imagenCerebro = require("../../assets/images/brain_base.jpg");
+  // Lógica corregida con extensión .png para las imágenes del cerebro
+  let imagenCerebro = require("../../assets/images/brain_base.png");
   if (pctPrefrontal > pctLimbico && pctPrefrontal > 0) {
-    imagenCerebro = require("../../assets/images/brain_prefrontal.jpg");
+    imagenCerebro = require("../../assets/images/brain_prefrontal.png");
   } else if (pctLimbico > pctPrefrontal && pctLimbico > 0) {
-    imagenCerebro = require("../../assets/images/brain_limbico.jpg");
+    imagenCerebro = require("../../assets/images/brain_limbico.png");
   }
 
   return (
