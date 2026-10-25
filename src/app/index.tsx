@@ -111,7 +111,7 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V4");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V5");
       if (stored) {
         setHabitos(JSON.parse(stored));
       } else {
@@ -126,7 +126,7 @@ export default function App() {
     setHabitos(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V4",
+        "NEURO_HABITS_MOBILE_V5",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -197,7 +197,7 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
-  // Lógica para cambiar la imagen del cerebro dinámicamente
+  // Lógica de imágenes del cerebro según tu rendimiento
   let imagenCerebro = require("../../assets/images/brain_base.jpg");
   if (pctPrefrontal > pctLimbico && pctPrefrontal > 0) {
     imagenCerebro = require("../../assets/images/brain_prefrontal.jpg");
@@ -239,7 +239,7 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON IMAGEN DINÁMICA */}
+        {/* SECCIÓN CEREBRO CON IMAGEN Y ESTADÍSTICAS ABAJO */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -250,13 +250,14 @@ export default function App() {
 
           <Image source={imagenCerebro} style={styles.brainImage} />
 
-          <View style={styles.brainStatsRow}>
+          <View style={styles.brainStatsBox}>
             <Text style={styles.brainStatText}>
-              Prefrontal:{" "}
+              Mejoraste tu corteza prefrontal:{" "}
               <Text style={{ color: "#00f0ff" }}>{pctPrefrontal}%</Text>
             </Text>
             <Text style={styles.brainStatText}>
-              Límbico: <Text style={{ color: "#ff0055" }}>{pctLimbico}%</Text>
+              Tu sistema límbico aumentó:{" "}
+              <Text style={{ color: "#ff0055" }}>{pctLimbico}%</Text>
             </Text>
           </View>
         </View>
@@ -554,17 +555,19 @@ const styles = StyleSheet.create({
   smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
   brainImage: {
     width: "100%",
-    height: 160,
+    height: 180,
     borderRadius: 6,
-    marginBottom: 10,
+    marginBottom: 12,
     resizeMode: "cover",
   },
-  brainStatsRow: {
-    width: "100%",
-    flexDirection: "row",
-    justifyContent: "space-around",
+  brainStatsBox: { width: "100%", alignItems: "center" },
+  brainStatText: {
+    color: "#94a3b8",
+    fontSize: 12,
+    fontWeight: "600",
+    marginBottom: 4,
+    textAlign: "center",
   },
-  brainStatText: { color: "#94a3b8", fontSize: 12, fontWeight: "600" },
   btnAddHabit: {
     backgroundColor: "#1f2937",
     padding: 10,
