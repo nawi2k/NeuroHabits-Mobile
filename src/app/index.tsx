@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Alert,
+  Animated,
   Image,
   Modal,
   ScrollView,
@@ -106,15 +107,21 @@ export default function App() {
   const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
+  // Referencias para las animaciones suaves de opacidad
+  const animPrefrontal = useRef(new Animated.Value(0)).current;
+  const animLimbico = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     cargarDatos();
   }, []);
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V7");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V10");
       if (stored) {
-        setHabitos(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setHabitos(parsed);
+        actualizarAnimaciones(parsed);
       } else {
         setHabitos([]);
       }
@@ -125,14 +132,42 @@ export default function App() {
 
   const guardarYActualizar = async (nuevosHabitos: any[]) => {
     setHabitos(nuevosHabitos);
+    actualizarAnimaciones(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V7",
+        "NEURO_HABITS_MOBILE_V10",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const actualizarAnimaciones = (listaHabitos: any[]) => {
+    const total = listaHabitos.length * 7;
+    let comp = 0;
+    let fail = 0;
+    listaHabitos.forEach((h: any) => {
+      comp += h.checks.filter((c: string) => c === "YES").length;
+      fail += h.checks.filter((c: string) => c === "NO").length;
+    });
+
+    const targetPrefrontal = total > 0 ? Math.min(comp / total, 1) : 0;
+    const targetLimbico = total > 0 ? Math.min(fail / total, 1) : 0;
+
+    // Animación fluida con timing (transición suave de color)
+    Animated.parallel([
+      Animated.timing(animPrefrontal, {
+        toValue: targetPrefrontal,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(animLimbico, {
+        toValue: targetLimbico,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const manejarClickCelda = (hIdx: number, dIdx: number) => {
@@ -180,7 +215,6 @@ export default function App() {
     setModalNuevoHabito(false);
   };
 
-  // Función con cartel de confirmación para borrar hábito
   const confirmarEliminarHabito = (hIdx: number) => {
     Alert.alert(
       "Eliminar Hábito",
@@ -212,20 +246,9 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
-  // URLs seguras de respaldo en la nube para garantizar que el cerebro cargue siempre al 100% en el emulador
-  let urlCerebro =
-    "https://images.unsplash.com/photo-1559757175-5700dde675bc?q=80&w=800&auto=format&fit=crop"; // Base por defecto
-  if (pctPrefrontal > pctLimbico && pctPrefrontal > 0) {
-    urlCerebro =
-      "https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=800&auto=format&fit=crop"; // Estética prefrontal / activa
-  } else if (pctLimbico > pctPrefrontal && pctLimbico > 0) {
-    urlCerebro =
-      "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?q=80&w=800&auto=format&fit=crop"; // Estética límbica / descanso
-  }
-
   return (
     <View style={styles.mainContainer}>
-      {/* HEADER LIMPIO (Sin el signo de pregunta superior) */}
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
@@ -252,7 +275,7 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON IMAGEN GARANTIZADA */}
+        {/* SECCIÓN CEREBRO CON ANIMACIÓN FLUIDA Y CAPAS */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -261,7 +284,25 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          <Image source={{ uri: urlCerebro }} style={styles.brainImage} />
+          <View style={styles.brainImageContainer}>
+            {/* Imagen Base Estática */}
+            <Image
+              source={require("../../assets/images/brain_base.png")}
+              style={styles.brainImage}
+            />
+
+            {/* Capa Animada Corteza Prefrontal */}
+            <Animated.Image
+              source={require("../../assets/images/brain_prefrontal.png")}
+              style={[styles.brainOverlay, { opacity: animPrefrontal }]}
+            />
+
+            {/* Capa Animada Sistema Límbico */}
+            <Animated.Image
+              source={require("../../assets/images/brain_limbico.png")}
+              style={[styles.brainOverlay, { opacity: animLimbico }]}
+            />
+          </View>
 
           <View style={styles.brainStatsBox}>
             <Text style={styles.brainStatText}>
@@ -471,22 +512,78 @@ export default function App() {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentGrande}>
-            <Text style={styles.modalTitle}>
-              🧠 Corteza Prefrontal vs Sistema Límbico
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
+            >
+              <Text
+                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+              >
+                🧠 Neurociencia de tus Hábitos
+              </Text>
+              <TouchableOpacity onPress={() => setModalAyudaVisible(false)}>
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text
+              style={{
+                color: "#00f0ff",
+                fontWeight: "bold",
+                fontSize: 13,
+                marginBottom: 4,
+              }}
+            >
+              🔵 Corteza Prefrontal (Disciplina y Evolución)
             </Text>
-            <Text style={styles.modalText}>
-              • Corteza Prefrontal: Es la parte del cerebro de la disciplina, el
-              foco y el cumplimiento de metas a largo plazo (✔).{"\n\n"}•
-              Sistema Límbico: Es el que busca la comodidad, el placer inmediato
-              y pone excusas (✖).{"\n\n"}
-              Tu objetivo es dominar tu mente y elevar tu prefrontal por encima
-              del 70%.
+            <Text
+              style={{
+                color: "#d1d5db",
+                fontSize: 11,
+                lineHeight: 16,
+                marginBottom: 12,
+              }}
+            >
+              Es la región más avanzada del cerebro humano. Se encarga de la
+              planificación a largo plazo, el autocontrol y la fuerza de
+              voluntad.
             </Text>
+
+            <Text
+              style={{
+                color: "#ff0055",
+                fontWeight: "bold",
+                fontSize: 13,
+                marginBottom: 4,
+              }}
+            >
+              🔴 Sistema Límbico (Instinto y Comodidad)
+            </Text>
+            <Text
+              style={{
+                color: "#d1d5db",
+                fontSize: 11,
+                lineHeight: 16,
+                marginBottom: 20,
+              }}
+            >
+              El centro emocional primitivo del cerebro. Busca el placer
+              inmediato y evita el esfuerzo (zona de confort).
+            </Text>
+
             <TouchableOpacity
               onPress={() => setModalAyudaVisible(false)}
               style={styles.closeBtnModal}
             >
-              <Text style={{ color: "#00f0ff", fontWeight: "bold" }}>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
                 ENTENDIDO
               </Text>
             </TouchableOpacity>
@@ -557,13 +654,31 @@ const styles = StyleSheet.create({
   },
   brainTitle: { color: "#fff", fontSize: 13, fontWeight: "bold" },
   smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
+
+  // Contenedor estético y perfectamente encajado
+  brainImageContainer: {
+    width: "100%",
+    height: 160,
+    borderRadius: 6,
+    overflow: "hidden",
+    position: "relative",
+    marginBottom: 12,
+    backgroundColor: "#000",
+  },
   brainImage: {
     width: "100%",
-    height: 180,
-    borderRadius: 6,
-    marginBottom: 12,
+    height: "100%",
     resizeMode: "cover",
   },
+  brainOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+
   brainStatsBox: { width: "100%", alignItems: "center" },
   brainStatText: {
     color: "#94a3b8",
