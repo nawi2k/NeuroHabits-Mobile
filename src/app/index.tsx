@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
+  Alert,
   Image,
   Modal,
   ScrollView,
@@ -111,7 +112,7 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V6");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V7");
       if (stored) {
         setHabitos(JSON.parse(stored));
       } else {
@@ -126,7 +127,7 @@ export default function App() {
     setHabitos(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V6",
+        "NEURO_HABITS_MOBILE_V7",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -179,9 +180,23 @@ export default function App() {
     setModalNuevoHabito(false);
   };
 
-  const eliminarHabito = (hIdx: number) => {
-    const nuevos = habitos.filter((_, idx) => idx !== hIdx);
-    guardarYActualizar(nuevos);
+  // Función con cartel de confirmación para borrar hábito
+  const confirmarEliminarHabito = (hIdx: number) => {
+    Alert.alert(
+      "Eliminar Hábito",
+      "¿Estás seguro de que querés borrar este hábito?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sí, borrar",
+          style: "destructive",
+          onPress: () => {
+            const nuevos = habitos.filter((_, idx) => idx !== hIdx);
+            guardarYActualizar(nuevos);
+          },
+        },
+      ],
+    );
   };
 
   const totalChecks = habitos.length * 7;
@@ -197,17 +212,20 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
-  // Lógica corregida con extensión .png para las imágenes del cerebro
-  let imagenCerebro = require("../../assets/images/brain_base.png");
+  // URLs seguras de respaldo en la nube para garantizar que el cerebro cargue siempre al 100% en el emulador
+  let urlCerebro =
+    "https://images.unsplash.com/photo-1559757175-5700dde675bc?q=80&w=800&auto=format&fit=crop"; // Base por defecto
   if (pctPrefrontal > pctLimbico && pctPrefrontal > 0) {
-    imagenCerebro = require("../../assets/images/brain_prefrontal.png");
+    urlCerebro =
+      "https://images.unsplash.com/photo-1507413245164-6160d8298b31?q=80&w=800&auto=format&fit=crop"; // Estética prefrontal / activa
   } else if (pctLimbico > pctPrefrontal && pctLimbico > 0) {
-    imagenCerebro = require("../../assets/images/brain_limbico.png");
+    urlCerebro =
+      "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?q=80&w=800&auto=format&fit=crop"; // Estética límbica / descanso
   }
 
   return (
     <View style={styles.mainContainer}>
-      {/* HEADER */}
+      {/* HEADER LIMPIO (Sin el signo de pregunta superior) */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
@@ -221,12 +239,7 @@ export default function App() {
           <Text style={styles.subtitle}>created by sandev</Text>
         </View>
 
-        <TouchableOpacity
-          onPress={() => setModalAyudaVisible(true)}
-          style={styles.helpButton}
-        >
-          <Text style={styles.helpIcon}>?</Text>
-        </TouchableOpacity>
+        <View style={{ width: 30 }} />
       </View>
 
       <ScrollView style={styles.container}>
@@ -239,7 +252,7 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON IMAGEN Y ESTADÍSTICAS ABAJO */}
+        {/* SECCIÓN CEREBRO CON IMAGEN GARANTIZADA */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -248,7 +261,7 @@ export default function App() {
             </TouchableOpacity>
           </View>
 
-          <Image source={imagenCerebro} style={styles.brainImage} />
+          <Image source={{ uri: urlCerebro }} style={styles.brainImage} />
 
           <View style={styles.brainStatsBox}>
             <Text style={styles.brainStatText}>
@@ -314,7 +327,7 @@ export default function App() {
                   );
                 })}
                 <TouchableOpacity
-                  onPress={() => eliminarHabito(hIdx)}
+                  onPress={() => confirmarEliminarHabito(hIdx)}
                   style={{ paddingLeft: 6 }}
                 >
                   <Text style={{ color: "#ff0055", fontWeight: "bold" }}>
@@ -507,15 +520,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   subtitle: { fontSize: 10, color: "#94a3b8", letterSpacing: 2 },
-  helpButton: {
-    backgroundColor: "#1f2937",
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  helpIcon: { color: "#00f0ff", fontWeight: "bold" },
   container: { flex: 1, padding: 16 },
   quoteCard: {
     backgroundColor: "#111827",
