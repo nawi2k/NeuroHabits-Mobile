@@ -1,47 +1,109 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import {
+  Image,
   Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
 
-const FRASES_GOGGINS = [
-  "«El crecimiento solo vive del otro lado del sufrimiento.»",
-  "«David Goggins corrió 160 kilómetros con las rótulas destrozadas. ¿Y vos decís que estás cansado?»",
-  "«Tu cerebro te miente diciendo que no podés más. Apenas vas por el 40%.»",
-  "«Si buscas comodidad, estás eligiendo la mediocridad.»",
+const LISTA_FILOSOFIA = [
+  "«Aerodinámicamente, el cuerpo de una abeja no está hecho para volar; lo bueno es que la abeja no lo sabe.»",
+  "«No te desesperes, antes tenías menos.»",
+  "«Tienes poder sobre tu mente, no sobre lo que sucede a tu alrededor. Comprende esto y encontrarás la fortaleza.» — Marco Aurelio",
+  "«¿Cómo no te desesperaste si no avanzabas? — Porque lo entrené.»",
+  "«El éxito significa ir de fracaso en fracaso sin perder el entusiasmo.»",
+  "«Nunca te sentirás listo, porque estar listo no es un sentimiento. Es una decisión.»",
+  "«La mayoría de la gente te dirá que pares porque ellos no pueden seguir. No confíes en sus límites, confía en tu capacidad de sufrir. Al final del día es tu mente contra ti, nadie más cuenta.» — David Goggins",
+  "«Tuve que inventar un tipo que ni siquiera existía.» — David Goggins",
+  "«Tu mínimo es el máximo de alguien. Tu máximo es el mínimo de alguien.»",
+  "«Recuerda que la vida te hace perder, para ver si de verdad quieres ganar.»",
+  "«Toqué tantas veces fondo que, cada vez que bajo, ya sé que mañana subiré.» — Jorge Luis Borges",
+  "«La comodidad mata los sueños.» — Nahuel Sandoval",
+  "«En condiciones de paz, el hombre de guerra se ataca a sí mismo.» — Friedrich Nietzsche",
+  "«Renunciar a los placeres temporales para construir algo grande no es perderse nada.»",
+  "«Domina tu mente, sé el hombre más disciplinado que haya existido en mi entorno. Que nadie, ni mis impulsos ni mi pasado, decida por mí.» — Nahuel Sandoval",
+  "«Si le pides a Dios ganar un maratón, te enviará un par de zapatos, no una medalla.»",
+  "«Ese antojo no te hizo perder músculo o engordar, pero sí te recordó que aún no dominas tu mente.»",
+  "«Cuando la cabeza dice que pares, estás en un 40% de tu verdadero potencial.» — David Goggins",
+  "«¿Quién sos cuando nadie te está mirando?»",
+  "«El día que el hombre supere sus deseos y adicciones, ese día el hombre se vuelve libre de verdad para lograr cosas increíbles y conocer su verdadero potencial.»",
+  "«No pares, no te conformes y cada día aunque te sientas bien. Busca un punto para mejorar.» — Nahuel Sandoval",
+  "«Si Dios puede quitarte algo que nunca imaginaste perder, también puede darte algo que nunca imaginaste tener.»",
+];
+
+const FRASES_GOGGINS_SUCCESS = [
+  "Stay Hard! Te estás volviendo imparable.",
+  "Estás construyendo callos en la mente. ¡Sigue empujando!",
+  "Rompiendo tus propios límites. ¡Eso es mentalidad de 1%!",
+  "No paren cuando estén cansados, paren cuando hayan TERMINADO.",
+  "La única persona en el espejo puede frenarte. ¡Bien hecho!",
+  "Dominio absoluto de la corteza prefrontal. ¡Imparable!",
+];
+
+const FRASES_GOGGINS_FAIL = [
+  "¿En serio? ¿Sos una perra o querés cambiar?",
+  "¡Puras excusas! Tu sistema límbico te está gobernando.",
+  "Nadie viene a salvarte. ¡Levantate y hacé lo que tenés que hacer!",
+  "¿Realmente querías mejorar o era mentira?",
+  "Estás cómodo y por eso estás perdiendo. ¡Stay Hard!",
+  "Deja de llorar y ponete a trabajar. ¡Media pila!",
+  "El dolor es temporal. Tu mediocridad si sigues así será eterna.",
 ];
 
 const RANGOS_GOGGINS = [
-  { nivel: 1, meta: 50, nombre: "NIVEL 1: ZONA DE CONFORT", desc: "Meta: 50%" },
+  {
+    nivel: 1,
+    meta: 50,
+    nombre: "NIVEL 1: ZONA DE CONFORT",
+    desc: "Meta: 50%",
+    img: require("../../assets/images/goggins_lvl1.png"),
+  },
   {
     nivel: 2,
     meta: 60,
     nombre: "NIVEL 2: ESTABLECIENDO BASES",
     desc: "Meta: 60%",
+    img: require("../../assets/images/goggins_lvl2.png"),
   },
   {
     nivel: 3,
     meta: 70,
     nombre: "NIVEL 3: CALLOUS YOUR MIND",
     desc: "Meta: 70%",
+    img: require("../../assets/images/goggins_lvl3.png"),
   },
-  { nivel: 4, meta: 80, nombre: "NIVEL 4: EL 1% MÁS DURO", desc: "Meta: 80%" },
-  { nivel: 5, meta: 90, nombre: "NIVEL MAX: STAY HARD!", desc: "Meta: 90%" },
+  {
+    nivel: 4,
+    meta: 80,
+    nombre: "NIVEL 4: EL 1% MÁS DURO",
+    desc: "Meta: 80%",
+    img: require("../../assets/images/goggins_lvl4.png"),
+  },
+  {
+    nivel: 5,
+    meta: 90,
+    nombre: "NIVEL MAX: STAY HARD!",
+    desc: "Meta: 90%",
+    img: require("../../assets/images/goggins_lvl5.png"),
+  },
 ];
 
 export default function App() {
   const [habitos, setHabitos] = useState<any[]>([]);
-  const [fraseIdx, setFraseIdx] = useState(0);
+  const [fraseActual, setFraseActual] = useState(LISTA_FILOSOFIA[0]);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [modalAyudaVisible, setModalAyudaVisible] = useState(false);
+  const [modalNuevoHabito, setModalNuevoHabito] = useState(false);
+  const [nombreNuevoHabito, setNombreNuevoHabito] = useState("");
   const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
+  const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
   useEffect(() => {
     cargarDatos();
@@ -49,37 +111,11 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V2");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V4");
       if (stored) {
         setHabitos(JSON.parse(stored));
       } else {
-        const iniciales = [
-          {
-            id: 1,
-            nombre: "Levantarme a las 08:30",
-            checks: [null, null, null, null, null, null, null],
-          },
-          {
-            id: 2,
-            nombre: "Correr 10 AM",
-            checks: [null, null, null, null, null, null, null],
-          },
-          {
-            id: 3,
-            nombre: "Comer bien",
-            checks: [null, null, null, null, null, null, null],
-          },
-          {
-            id: 4,
-            nombre: "Dormir temprano",
-            checks: [null, null, null, null, null, null, null],
-          },
-        ];
-        setHabitos(iniciales);
-        await AsyncStorage.setItem(
-          "NEURO_HABITS_MOBILE_V2",
-          JSON.stringify(iniciales),
-        );
+        setHabitos([]);
       }
     } catch (e) {
       console.error(e);
@@ -90,7 +126,7 @@ export default function App() {
     setHabitos(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V2",
+        "NEURO_HABITS_MOBILE_V4",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -98,19 +134,53 @@ export default function App() {
     }
   };
 
-  // Ciclo de 3 estados: null -> YES -> NO -> null
   const manejarClickCelda = (hIdx: number, dIdx: number) => {
     const nuevos = [...habitos];
     const actual = nuevos[hIdx].checks[dIdx];
 
     if (actual === null) {
-      nuevos[hIdx].checks[dIdx] = "YES"; // 1er toque: Cumplido
+      nuevos[hIdx].checks[dIdx] = "YES";
+      const frase =
+        FRASES_GOGGINS_SUCCESS[
+          Math.floor(Math.random() * FRASES_GOGGINS_SUCCESS.length)
+        ];
+      setFraseActual(`"${frase}"`);
     } else if (actual === "YES") {
-      nuevos[hIdx].checks[dIdx] = "NO"; // 2do toque: Fallado
+      nuevos[hIdx].checks[dIdx] = "NO";
+      const frase =
+        FRASES_GOGGINS_FAIL[
+          Math.floor(Math.random() * FRASES_GOGGINS_FAIL.length)
+        ];
+      setFraseActual(`"${frase}"`);
     } else {
-      nuevos[hIdx].checks[dIdx] = null; // 3er toque: Vacío
+      nuevos[hIdx].checks[dIdx] = null;
     }
 
+    guardarYActualizar(nuevos);
+  };
+
+  const cambiarFraseAleatoria = () => {
+    const idx = Math.floor(Math.random() * LISTA_FILOSOFIA.length);
+    setFraseActual(LISTA_FILOSOFIA[idx]);
+  };
+
+  const agregarHabito = () => {
+    if (nombreNuevoHabito.trim() === "") return;
+    const nuevos = [
+      ...habitos,
+      {
+        id: Date.now(),
+        nombre: nombreNuevoHabito.trim(),
+        checks: [null, null, null, null, null, null, null],
+      },
+    ];
+    guardarYActualizar(nuevos);
+    setNombreNuevoHabito("");
+    setModalNuevoHabito(false);
+  };
+
+  const eliminarHabito = (hIdx: number) => {
+    const nuevos = habitos.filter((_, idx) => idx !== hIdx);
     guardarYActualizar(nuevos);
   };
 
@@ -127,9 +197,17 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
+  // Lógica para cambiar la imagen del cerebro dinámicamente
+  let imagenCerebro = require("../../assets/images/brain_base.jpg");
+  if (pctPrefrontal > pctLimbico && pctPrefrontal > 0) {
+    imagenCerebro = require("../../assets/images/brain_prefrontal.jpg");
+  } else if (pctLimbico > pctPrefrontal && pctLimbico > 0) {
+    imagenCerebro = require("../../assets/images/brain_limbico.jpg");
+  }
+
   return (
     <View style={styles.mainContainer}>
-      {/* HEADER PRINCIPAL */}
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
@@ -155,15 +233,13 @@ export default function App() {
         {/* FRASES MOTIVACIONALES */}
         <TouchableOpacity
           style={styles.quoteCard}
-          onPress={() =>
-            setFraseIdx((prev) => (prev + 1) % FRASES_GOGGINS.length)
-          }
+          onPress={cambiarFraseAleatoria}
         >
-          <Text style={styles.quoteText}>{FRASES_GOGGINS[fraseIdx]}</Text>
+          <Text style={styles.quoteText}>{fraseActual}</Text>
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO Y NEUROQUÍMICA */}
+        {/* SECCIÓN CEREBRO CON IMAGEN DINÁMICA */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -171,6 +247,9 @@ export default function App() {
               <Text style={styles.smallQuestion}>?</Text>
             </TouchableOpacity>
           </View>
+
+          <Image source={imagenCerebro} style={styles.brainImage} />
+
           <View style={styles.brainStatsRow}>
             <Text style={styles.brainStatText}>
               Prefrontal:{" "}
@@ -181,6 +260,14 @@ export default function App() {
             </Text>
           </View>
         </View>
+
+        {/* BOTÓN NUEVO HÁBITO */}
+        <TouchableOpacity
+          style={styles.btnAddHabit}
+          onPress={() => setModalNuevoHabito(true)}
+        >
+          <Text style={styles.btnAddHabitText}>+ Nuevo Hábito</Text>
+        </TouchableOpacity>
 
         {/* PLANILLA DE HÁBITOS */}
         <View style={styles.tableContainer}>
@@ -193,35 +280,49 @@ export default function App() {
             ))}
           </View>
 
-          {habitos.map((h, hIdx) => (
-            <View key={h.id} style={styles.tableRow}>
-              <Text style={styles.habitoNombre} numberOfLines={1}>
-                {h.nombre}
-              </Text>
-              {h.checks.map((chk: string | null, dIdx: number) => {
-                let cellStyle: any = styles.cell;
-                let simbol = "";
+          {habitos.length === 0 ? (
+            <Text style={styles.emptyText}>
+              No hay hábitos. ¡Agregá uno con el botón de arriba!
+            </Text>
+          ) : (
+            habitos.map((h, hIdx) => (
+              <View key={h.id} style={styles.tableRow}>
+                <Text style={styles.habitoNombre} numberOfLines={1}>
+                  {h.nombre}
+                </Text>
+                {h.checks.map((chk: string | null, dIdx: number) => {
+                  let cellStyle: any = styles.cell;
+                  let simbol = "";
 
-                if (chk === "YES") {
-                  cellStyle = [styles.cell, styles.cellYes];
-                  simbol = "✔";
-                } else if (chk === "NO") {
-                  cellStyle = [styles.cell, styles.cellNo];
-                  simbol = "✖";
-                }
+                  if (chk === "YES") {
+                    cellStyle = [styles.cell, styles.cellYes];
+                    simbol = "✔";
+                  } else if (chk === "NO") {
+                    cellStyle = [styles.cell, styles.cellNo];
+                    simbol = "✖";
+                  }
 
-                return (
-                  <TouchableOpacity
-                    key={dIdx}
-                    style={cellStyle}
-                    onPress={() => manejarClickCelda(hIdx, dIdx)}
-                  >
-                    <Text style={styles.cellText}>{simbol}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          ))}
+                  return (
+                    <TouchableOpacity
+                      key={dIdx}
+                      style={cellStyle}
+                      onPress={() => manejarClickCelda(hIdx, dIdx)}
+                    >
+                      <Text style={styles.cellText}>{simbol}</Text>
+                    </TouchableOpacity>
+                  );
+                })}
+                <TouchableOpacity
+                  onPress={() => eliminarHabito(hIdx)}
+                  style={{ paddingLeft: 6 }}
+                >
+                  <Text style={{ color: "#ff0055", fontWeight: "bold" }}>
+                    ✕
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ))
+          )}
         </View>
 
         <Text style={styles.instructionFooter}>
@@ -229,7 +330,7 @@ export default function App() {
         </Text>
       </ScrollView>
 
-      {/* MENÚ HAMBURGUESA LATERAL (DRAWER) */}
+      {/* MENÚ HAMBURGUESA LATERAL */}
       <Modal visible={menuAbierto} animationType="slide" transparent={true}>
         <View style={styles.drawerOverlay}>
           <View style={styles.drawerContent}>
@@ -243,28 +344,24 @@ export default function App() {
             <ScrollView>
               <Text style={styles.sectionTitle}>🏆 Progreso de Rangos</Text>
               {RANGOS_GOGGINS.map((r) => (
-                <View key={r.nivel} style={styles.rangoItem}>
-                  <Text style={styles.rangoNombre}>{r.nombre}</Text>
-                  <Text style={styles.rangoDesc}>
-                    {r.desc} (Requieres {r.meta}% de corteza prefrontal)
-                  </Text>
-                </View>
-              ))}
-
-              <TouchableOpacity
-                style={styles.gogginsPhotoCard}
-                onPress={() => setModalGogginsVisible(true)}
-              >
-                <Text
-                  style={{
-                    color: "#00f0ff",
-                    fontWeight: "bold",
-                    textAlign: "center",
+                <TouchableOpacity
+                  key={r.nivel}
+                  style={styles.rangoItem}
+                  onPress={() => {
+                    setFotoSeleccionada(r.img);
+                    setModalGogginsVisible(true);
                   }}
                 >
-                  📸 Ver Mentor en Grande (Goggins)
-                </Text>
-              </TouchableOpacity>
+                  <Text style={styles.rangoNombre}>{r.nombre}</Text>
+                  <Text style={styles.rangoDesc}>
+                    {r.desc} (Requiere {r.meta}% prefrontal)
+                  </Text>
+                  <Image source={r.img} style={styles.rangoMiniImg} />
+                  <Text style={{ color: "#64748b", fontSize: 9, marginTop: 4 }}>
+                    Toca para ver en grande 🔍
+                  </Text>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </View>
         </View>
@@ -277,30 +374,82 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
+          <View style={[styles.modalContentGrande, { alignItems: "center" }]}>
             <Text
               style={{
-                color: "#fff",
+                color: "#00f0ff",
                 fontSize: 16,
                 marginBottom: 10,
-                textAlign: "center",
+                fontWeight: "bold",
               }}
             >
               STAY HARD 💀
             </Text>
+            {fotoSeleccionada && (
+              <Image
+                source={fotoSeleccionada}
+                style={{
+                  width: 220,
+                  height: 220,
+                  borderRadius: 8,
+                  marginBottom: 15,
+                }}
+                resizeMode="contain"
+              />
+            )}
             <TouchableOpacity
               onPress={() => setModalGogginsVisible(false)}
               style={styles.closeBtnModal}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                CERRAR ✕
-              </Text>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>CERRAR</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      {/* MODAL DE AYUDA / EXPLICACIÓN */}
+      {/* MODAL NUEVO HÁBITO */}
+      <Modal visible={modalNuevoHabito} animationType="fade" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <Text style={styles.modalTitle}>Crear Nuevo Hábito</Text>
+            <TextInput
+              style={styles.inputModal}
+              placeholder="Ej: Entrenar / Boxeo"
+              placeholderTextColor="#64748b"
+              value={nombreNuevoHabito}
+              onChangeText={setNombreNuevoHabito}
+            />
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <TouchableOpacity
+                onPress={() => setModalNuevoHabito(false)}
+                style={[
+                  styles.closeBtnModal,
+                  { backgroundColor: "#1f2937", flex: 1, marginRight: 5 },
+                ]}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  CANCELAR
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={agregarHabito}
+                style={[
+                  styles.closeBtnModal,
+                  { backgroundColor: "#00f0ff", flex: 1, marginLeft: 5 },
+                ]}
+              >
+                <Text style={{ color: "#000", fontWeight: "bold" }}>
+                  GUARDAR
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL AYUDA */}
       <Modal
         visible={modalAyudaVisible}
         animationType="fade"
@@ -392,17 +541,40 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     marginBottom: 15,
+    alignItems: "center",
   },
   brainHeader: {
+    width: "100%",
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 6,
+    marginBottom: 8,
   },
   brainTitle: { color: "#fff", fontSize: 13, fontWeight: "bold" },
   smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
-  brainStatsRow: { flexDirection: "row", justifyContent: "space-around" },
+  brainImage: {
+    width: "100%",
+    height: 160,
+    borderRadius: 6,
+    marginBottom: 10,
+    resizeMode: "cover",
+  },
+  brainStatsRow: {
+    width: "100%",
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
   brainStatText: { color: "#94a3b8", fontSize: 12, fontWeight: "600" },
+  btnAddHabit: {
+    backgroundColor: "#1f2937",
+    padding: 10,
+    borderRadius: 6,
+    alignItems: "center",
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#00f0ff",
+  },
+  btnAddHabitText: { color: "#00f0ff", fontWeight: "bold", fontSize: 12 },
   tableContainer: {
     backgroundColor: "#111827",
     borderRadius: 8,
@@ -446,6 +618,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   cellText: { color: "#fff", fontSize: 11, fontWeight: "bold" },
+  emptyText: {
+    color: "#64748b",
+    textAlign: "center",
+    padding: 15,
+    fontSize: 12,
+  },
   instructionFooter: {
     color: "#64748b",
     fontSize: 10,
@@ -483,17 +661,22 @@ const styles = StyleSheet.create({
     backgroundColor: "#1f2937",
     padding: 10,
     borderRadius: 6,
-    marginBottom: 8,
-  },
-  rangoNombre: { color: "#00f0ff", fontSize: 11, fontWeight: "bold" },
-  rangoDesc: { color: "#94a3b8", fontSize: 9, marginTop: 2 },
-  gogginsPhotoCard: {
-    backgroundColor: "#1f2937",
-    padding: 12,
-    borderRadius: 6,
-    marginTop: 15,
+    marginBottom: 10,
     alignItems: "center",
   },
+  rangoNombre: {
+    color: "#00f0ff",
+    fontSize: 11,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  rangoDesc: {
+    color: "#94a3b8",
+    fontSize: 9,
+    marginTop: 2,
+    textAlign: "center",
+  },
+  rangoMiniImg: { width: 70, height: 70, borderRadius: 4, marginTop: 6 },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.8)",
@@ -520,10 +703,19 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 20,
   },
+  inputModal: {
+    backgroundColor: "#1f2937",
+    color: "#fff",
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 15,
+    fontSize: 12,
+  },
   closeBtnModal: {
     backgroundColor: "#1f2937",
     padding: 10,
     borderRadius: 6,
     alignItems: "center",
+    marginTop: 10,
   },
 });
