@@ -34,7 +34,7 @@ const LISTA_FILOSOFIA = [
   "«Domina tu mente, sé el hombre más disciplinado que haya existido en mi entorno. Que nadie, ni mis impulsos ni mi pasado, decida por mí.» — Nahuel Sandoval",
   "«Si le pides a Dios ganar un maratón, te enviará un par de zapatos, no una medalla.»",
   "«Ese antojo no te hizo perder músculo o engordar, pero sí te recordó que aún no dominas tu mente.»",
-  "«Cuando la cabeza dice que pares, estás en un 40% de tu verdadero potencial.» — David Goggins",
+  "«Когда la cabeza dice que pares, estás en un 40% de tu verdadero potencial.» — David Goggins",
   "«¿Quién sos cuando nadie te está mirando?»",
   "«El día que el hombre supere sus deseos y adicciones, ese día el hombre se vuelve libre de verdad para lograr cosas increíbles y conocer su verdadero potencial.»",
   "«No pares, no te conformes y cada día aunque te sientas bien. Busca un punto para mejorar.» — Nahuel Sandoval",
@@ -44,7 +44,7 @@ const LISTA_FILOSOFIA = [
 const FRASES_GOGGINS_SUCCESS = [
   "Stay Hard! Te estás volviendo imparable.",
   "Estás construyendo callos en la mente. ¡Sigue empujando!",
-  "Rompiendo tus propios límites. ¡Isis es mentalidad de 1%!",
+  "Rompiendo tus propios límites. ¡Eso es mentalidad de 1%!",
   "No paren cuando estén cansados, paren cuando hayan TERMINADO.",
   "La única persona en el espejo puede frenarte. ¡Bien hecho!",
   "Dominio absoluto de la corteza prefrontal. ¡Imparable!",
@@ -112,7 +112,6 @@ interface Rango {
   img: any;
 }
 
-// Función auxiliar para obtener el número de la semana actual del año
 const obtenerNumeroSemana = (d: Date) => {
   const date = new Date(d.getTime());
   date.setHours(0, 0, 0, 0);
@@ -151,6 +150,8 @@ export default function App() {
     useState<boolean>(false);
   const [mensajeAscenso, setMensajeAscenso] = useState<string>("");
 
+  const [alertaLimbicaYaMostrada, setAlertaLimbicaYaMostrada] =
+    useState<boolean>(false);
   const [habitoSeleccionadoTexto, setHabitoSeleccionadoTexto] = useState<
     string | null
   >(null);
@@ -193,7 +194,6 @@ export default function App() {
     return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  // SISTEMA DE REINICIO SEMANAL AUTOMÁTICO Y EVALUACIÓN DE RANGO
   const verificarYReiniciarSemana = async () => {
     try {
       const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V22");
@@ -208,7 +208,6 @@ export default function App() {
       if (stored) {
         let parsedHabitos: Habito[] = JSON.parse(stored);
 
-        // Si cambió la semana, evaluamos el rendimiento de la semana que pasó
         if (
           ultimaSemanaGuardada &&
           parseInt(ultimaSemanaGuardada) !== semanaActual
@@ -224,7 +223,6 @@ export default function App() {
             totalChecks > 0 ? Math.round((cumplidos / totalChecks) * 100) : 0;
 
           let nivelNum = parseInt(nivelActualStr);
-          // Si alcanzó el 50% o más, sube de nivel (hasta nivel máximo 5)
           if (pctPrefrontalSemana >= 50 && nivelNum < 5) {
             nivelNum += 1;
             await AsyncStorage.setItem(
@@ -243,7 +241,6 @@ export default function App() {
             setModalAscensoVisible(true);
           }
 
-          // Reiniciamos automáticamente los ticks de todos los hábitos (los nombres se mantienen)
           parsedHabitos = parsedHabitos.map((h: Habito) => ({
             ...h,
             checks: [null, null, null, null, null, null, null],
@@ -307,7 +304,14 @@ export default function App() {
     ]).start();
 
     if (fallados > cumplidos && fallados >= 3) {
-      setModalAlertaLimbicaVisible(true);
+      if (!alertaLimbicaYaMostrada) {
+        setModalAlertaLimbicaVisible(true);
+        setAlertaLimbicaYaMostrada(true);
+      }
+    } else {
+      if (cumplidos >= fallados) {
+        setAlertaLimbicaYaMostrada(false);
+      }
     }
   };
 
@@ -430,7 +434,6 @@ export default function App() {
       </View>
 
       <ScrollView style={styles.container}>
-        {/* Racha de Fuego con colores optimizados para Hell Week */}
         <View
           style={[
             styles.streakCard,
@@ -442,7 +445,9 @@ export default function App() {
         >
           <Text style={[styles.streakText, esHellWeek && { color: "#ffccd5" }]}>
             🔥 Racha Prefrontal:{" "}
-            <Text style={{ color: "#00f0ff" }}>{pctPrefrontal}% Dominio</Text>
+            <Text style={{ color: esHellWeek ? "#00ff66" : "#00f0ff" }}>
+              {pctPrefrontal}% Dominio
+            </Text>
           </Text>
           <Text
             style={[styles.streakSubText, esHellWeek && { color: "#ff99bb" }]}
@@ -484,7 +489,14 @@ export default function App() {
               🧠 Respuesta Neuroquímica
             </Text>
             <TouchableOpacity onPress={() => setModalAyudaVisible(true)}>
-              <Text style={styles.smallQuestion}>?</Text>
+              <Text
+                style={[
+                  styles.smallQuestion,
+                  esHellWeek && { color: "#ff0055" },
+                ]}
+              >
+                ?
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -508,7 +520,9 @@ export default function App() {
               style={[styles.brainStatText, esHellWeek && { color: "#ffccd5" }]}
             >
               Mejoraste tu corteza prefrontal:{" "}
-              <Text style={{ color: "#00f0ff" }}>{pctPrefrontal}%</Text>
+              <Text style={{ color: esHellWeek ? "#00ff66" : "#00f0ff" }}>
+                {pctPrefrontal}%
+              </Text>
             </Text>
             <Text
               style={[styles.brainStatText, esHellWeek && { color: "#ffccd5" }]}
@@ -520,10 +534,20 @@ export default function App() {
         </View>
 
         <TouchableOpacity
-          style={styles.btnAddHabit}
+          style={[
+            styles.btnAddHabit,
+            esHellWeek && {
+              borderColor: "#ff0055",
+              backgroundColor: "#1f1012",
+            },
+          ]}
           onPress={() => setModalNuevoHabito(true)}
         >
-          <Text style={styles.btnAddHabitText}>+ Nuevo Hábito</Text>
+          <Text
+            style={[styles.btnAddHabitText, esHellWeek && { color: "#ff0055" }]}
+          >
+            + Nuevo Hábito
+          </Text>
         </TouchableOpacity>
 
         <View
@@ -559,7 +583,6 @@ export default function App() {
           ) : (
             habitos.map((h: Habito, hIdx: number) => (
               <View key={h.id} style={styles.tableRow}>
-                {/* Toca el nombre para abrir el modal si el texto es largo */}
                 <TouchableOpacity
                   style={{ flex: 2 }}
                   onPress={() => setHabitoSeleccionadoTexto(h.nombre)}
@@ -580,9 +603,18 @@ export default function App() {
                   let simbol = "";
 
                   if (chk === "YES") {
-                    cellStyle = [styles.cell, styles.cellYes];
+                    // CUMPLIDO: Verde brillante furioso (#00ff66) durante Hell Week para destacar contra el rojo
+                    cellStyle = [
+                      styles.cell,
+                      styles.cellYes,
+                      esHellWeek && {
+                        backgroundColor: "rgba(0, 255, 102, 0.25)",
+                        borderColor: "#00ff66",
+                      },
+                    ];
                     simbol = "✔";
                   } else if (chk === "NO") {
+                    // FALLADO: Rojo sangre
                     cellStyle = [styles.cell, styles.cellNo];
                     simbol = "✖";
                   }
@@ -593,7 +625,14 @@ export default function App() {
                       style={cellStyle}
                       onPress={() => manejarClickCelda(hIdx, dIdx)}
                     >
-                      <Text style={styles.cellText}>{simbol}</Text>
+                      <Text
+                        style={[
+                          styles.cellText,
+                          esHellWeek && chk === "YES" && { color: "#00ff66" },
+                        ]}
+                      >
+                        {simbol}
+                      </Text>
                     </TouchableOpacity>
                   );
                 })}
@@ -618,21 +657,21 @@ export default function App() {
         </Text>
       </ScrollView>
 
-      {/* MODAL PARA VER TEXTO LARGO DEL HÁBITO CON SCROLL */}
+      {/* MODAL PARA VER TEXTO LARGO */}
       <Modal
         visible={habitoSeleccionadoTexto !== null}
         animationType="fade"
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <Text
-              style={{
-                color: "#00f0ff",
-                fontSize: 14,
-                fontWeight: "bold",
-                marginBottom: 10,
-              }}
+              style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
             >
               📌 Detalle del Hábito:
             </Text>
@@ -643,7 +682,10 @@ export default function App() {
             </ScrollView>
             <TouchableOpacity
               onPress={() => setHabitoSeleccionadoTexto(null)}
-              style={styles.closeBtnModal}
+              style={[
+                styles.closeBtnModal,
+                esHellWeek && { backgroundColor: "#1f1012" },
+              ]}
             >
               <Text style={{ color: "#fff", fontWeight: "bold" }}>CERRAR</Text>
             </TouchableOpacity>
@@ -694,9 +736,22 @@ export default function App() {
       {/* MENÚ HAMBURGUESA LATERAL */}
       <Modal visible={menuAbierto} animationType="slide" transparent={true}>
         <View style={styles.drawerOverlay}>
-          <View style={styles.drawerContent}>
+          <View
+            style={[
+              styles.drawerContent,
+              esHellWeek && {
+                backgroundColor: "#140505",
+                borderColor: "#ff0055",
+                borderRightWidth: 1,
+              },
+            ]}
+          >
             <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>⚡ Menú & Opciones</Text>
+              <Text
+                style={[styles.drawerTitle, esHellWeek && { color: "#ff0055" }]}
+              >
+                ⚡ Menú & Opciones
+              </Text>
               <TouchableOpacity onPress={() => setMenuAbierto(false)}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
@@ -704,33 +759,83 @@ export default function App() {
 
             <ScrollView>
               <TouchableOpacity
-                style={styles.menuItemBtn}
+                style={[
+                  styles.menuItemBtn,
+                  esHellWeek && {
+                    backgroundColor: "#1f1012",
+                    borderColor: "#ff0055",
+                  },
+                ]}
                 onPress={() => setModalRangosVisible(true)}
               >
-                <Text style={styles.menuItemText}>🏆 Progreso de Rangos</Text>
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    esHellWeek && { color: "#ff0055" },
+                  ]}
+                >
+                  🏆 Progreso de Rangos
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.menuItemBtn}
+                style={[
+                  styles.menuItemBtn,
+                  esHellWeek && {
+                    backgroundColor: "#1f1012",
+                    borderColor: "#ff0055",
+                  },
+                ]}
                 onPress={() => setModalHistorialVisible(true)}
               >
-                <Text style={styles.menuItemText}>📜 Historial Mensual</Text>
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    esHellWeek && { color: "#ff0055" },
+                  ]}
+                >
+                  📜 Historial Mensual
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.menuItemBtn}
+                style={[
+                  styles.menuItemBtn,
+                  esHellWeek && {
+                    backgroundColor: "#1f1012",
+                    borderColor: "#ff0055",
+                  },
+                ]}
                 onPress={() => setModalSemanaVisible(true)}
               >
-                <Text style={styles.menuItemText}>
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    esHellWeek && { color: "#ff0055" },
+                  ]}
+                >
                   📊 Rendimiento Semana Pasada
                 </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.menuItemBtn}
+                style={[
+                  styles.menuItemBtn,
+                  esHellWeek && {
+                    backgroundColor: "#1f1012",
+                    borderColor: "#ff0055",
+                  },
+                ]}
                 onPress={() => setModalMeditacionVisible(true)}
               >
-                <Text style={styles.menuItemText}>🧘‍♂️ Módulo de Meditación</Text>
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    esHellWeek && { color: "#ff0055" },
+                  ]}
+                >
+                  🧘‍♂️ Módulo de Meditación
+                </Text>
               </TouchableOpacity>
             </ScrollView>
           </View>
@@ -744,7 +849,12 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <View
               style={{
                 flexDirection: "row",
@@ -754,7 +864,7 @@ export default function App() {
               }}
             >
               <Text
-                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
               >
                 🏆 Progreso de Rangos
               </Text>
@@ -770,13 +880,23 @@ export default function App() {
               {RANGOS_GOGGINS.map((r: Rango) => (
                 <TouchableOpacity
                   key={r.nivel}
-                  style={styles.rangoItem}
+                  style={[
+                    styles.rangoItem,
+                    esHellWeek && { backgroundColor: "#1f1012" },
+                  ]}
                   onPress={() => {
                     setFotoSeleccionada(r.img);
                     setModalGogginsVisible(true);
                   }}
                 >
-                  <Text style={styles.rangoNombre}>{r.nombre}</Text>
+                  <Text
+                    style={[
+                      styles.rangoNombre,
+                      esHellWeek && { color: "#ff0055" },
+                    ]}
+                  >
+                    {r.nombre}
+                  </Text>
                   <Text style={styles.rangoDesc}>
                     {r.desc} (Requiere {r.meta}% prefrontal)
                   </Text>
@@ -798,7 +918,12 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <View
               style={{
                 flexDirection: "row",
@@ -808,7 +933,7 @@ export default function App() {
               }}
             >
               <Text
-                style={{ color: "#00f0ff", fontSize: 15, fontWeight: "bold" }}
+                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
               >
                 📜 Historial ({nombreMes})
               </Text>
@@ -827,7 +952,7 @@ export default function App() {
                     style={{
                       width: 12,
                       height: 12,
-                      backgroundColor: "#00f0ff",
+                      backgroundColor: esHellWeek ? "#00ff66" : "#00f0ff",
                       marginRight: 4,
                     }}
                   />
@@ -872,7 +997,9 @@ export default function App() {
                     const esHoy = dia === hoy.getDate();
                     const bg = esHoy
                       ? pctPrefrontal >= pctLimbico
-                        ? "#00f0ff"
+                        ? esHellWeek
+                          ? "#00ff66"
+                          : "#00f0ff"
                         : "#ff0055"
                       : "#1f2937";
                     const textColor = esHoy ? "#000" : "#94a3b8";
@@ -922,7 +1049,12 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <View
               style={{
                 flexDirection: "row",
@@ -932,7 +1064,7 @@ export default function App() {
               }}
             >
               <Text
-                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
               >
                 📊 Rendimiento Semana Anterior
               </Text>
@@ -946,12 +1078,11 @@ export default function App() {
             </View>
             <ScrollView>
               <Text
-                style={{
-                  color: "#00f0ff",
-                  fontSize: 13,
-                  fontWeight: "bold",
-                  marginBottom: 10,
-                }}
+                style={[
+                  styles.modalTitle,
+                  { fontSize: 13, marginBottom: 10 },
+                  esHellWeek && { color: "#ff0055" },
+                ]}
               >
                 Dominio prefrontal general: {pctPrefrontal}%
               </Text>
@@ -974,7 +1105,12 @@ export default function App() {
                       }}
                     >
                       • {h.nombre}:{" "}
-                      <Text style={{ color: "#00f0ff", fontWeight: "bold" }}>
+                      <Text
+                        style={{
+                          color: esHellWeek ? "#00ff66" : "#00f0ff",
+                          fontWeight: "bold",
+                        }}
+                      >
                         {cumplidosH}/7 días cumplidos
                       </Text>
                     </Text>
@@ -993,7 +1129,13 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentGrande, { alignItems: "center" }]}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              { alignItems: "center" },
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <View
               style={{
                 width: "100%",
@@ -1004,7 +1146,7 @@ export default function App() {
               }}
             >
               <Text
-                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
               >
                 🧘‍♂️ Módulo de Meditación
               </Text>
@@ -1022,8 +1164,15 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            <View style={styles.timerCircle}>
-              <Text style={styles.timerText}>
+            <View
+              style={[
+                styles.timerCircle,
+                esHellWeek && { borderColor: "#ff0055" },
+              ]}
+            >
+              <Text
+                style={[styles.timerText, esHellWeek && { color: "#ff0055" }]}
+              >
                 {meditando
                   ? formatearTiempo(tiempoRestante)
                   : `${minutosMeditacion}:00`}
@@ -1050,7 +1199,11 @@ export default function App() {
               style={[
                 styles.closeBtnModal,
                 {
-                  backgroundColor: meditando ? "#ff0055" : "#00f0ff",
+                  backgroundColor: meditando
+                    ? "#ff0055"
+                    : esHellWeek
+                      ? "#ff0055"
+                      : "#00f0ff",
                   width: "100%",
                 },
               ]}
@@ -1117,14 +1270,15 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentGrande, { alignItems: "center" }]}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              { alignItems: "center" },
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <Text
-              style={{
-                color: "#00f0ff",
-                fontSize: 16,
-                marginBottom: 10,
-                fontWeight: "bold",
-              }}
+              style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
             >
               STAY HARD 💀
             </Text>
@@ -1153,8 +1307,17 @@ export default function App() {
       {/* MODAL NUEVO HÁBITO */}
       <Modal visible={modalNuevoHabito} animationType="fade" transparent={true}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
-            <Text style={styles.modalTitle}>Crear Nuevo Hábito</Text>
+          <View
+            style={[
+              styles.modalContentGrande,
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
+            <Text
+              style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
+            >
+              Crear Nuevo Hábito
+            </Text>
             <TextInput
               style={styles.inputModal}
               placeholder="Ej: Entrenar / Boxeo"
@@ -1180,10 +1343,19 @@ export default function App() {
                 onPress={agregarHabito}
                 style={[
                   styles.closeBtnModal,
-                  { backgroundColor: "#00f0ff", flex: 1, marginLeft: 5 },
+                  {
+                    backgroundColor: esHellWeek ? "#ff0055" : "#00f0ff",
+                    flex: 1,
+                    marginLeft: 5,
+                  },
                 ]}
               >
-                <Text style={{ color: "#000", fontWeight: "bold" }}>
+                <Text
+                  style={{
+                    color: esHellWeek ? "#fff" : "#000",
+                    fontWeight: "bold",
+                  }}
+                >
                   GUARDAR
                 </Text>
               </TouchableOpacity>
@@ -1199,17 +1371,23 @@ export default function App() {
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContentGrande}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              { maxHeight: "85%" },
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
             <View
               style={{
                 flexDirection: "row",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 15,
+                marginBottom: 12,
               }}
             >
               <Text
-                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
               >
                 🧠 Neurociencia de tus Hábitos
               </Text>
@@ -1222,59 +1400,127 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            <Text
-              style={{
-                color: "#00f0ff",
-                fontWeight: "bold",
-                fontSize: 13,
-                marginBottom: 4,
-              }}
-            >
-              🔵 Corteza Prefrontal (Disciplina y Evolución)
-            </Text>
-            <Text
-              style={{
-                color: "#d1d5db",
-                fontSize: 11,
-                lineHeight: 16,
-                marginBottom: 12,
-              }}
-            >
-              Es la región más avanzada del cerebro humano. Se encarga de la
-              planificación a largo plazo, el autocontrol y la fuerza de
-              voluntad.
-            </Text>
-
-            <Text
-              style={{
-                color: "#ff0055",
-                fontWeight: "bold",
-                fontSize: 13,
-                marginBottom: 4,
-              }}
-            >
-              🔴 Sistema Límbico (Instinto y Comodidad)
-            </Text>
-            <Text
-              style={{
-                color: "#d1d5db",
-                fontSize: 11,
-                lineHeight: 16,
-                marginBottom: 20,
-              }}
-            >
-              El centro emocional primitivo del cerebro. Busca el placer
-              inmediato y evita el esfuerzo (zona de confort).
-            </Text>
-
-            <TouchableOpacity
-              onPress={() => setModalAyudaVisible(false)}
-              style={styles.closeBtnModal}
-            >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
-                ENTENDIDO
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Text
+                style={{
+                  color: esHellWeek ? "#00ff66" : "#00f0ff",
+                  fontWeight: "bold",
+                  fontSize: 12,
+                  marginBottom: 2,
+                }}
+              >
+                🔵 Corteza Prefrontal (Disciplina y Evolución)
               </Text>
-            </TouchableOpacity>
+              <Text
+                style={{
+                  color: "#d1d5db",
+                  fontSize: 11,
+                  lineHeight: 15,
+                  marginBottom: 10,
+                }}
+              >
+                Es la región más avanzada del cerebro humano. Se encarga de la
+                planificación a largo plazo, el autocontrol y la fuerza de
+                voluntad.
+              </Text>
+
+              <Text
+                style={{
+                  color: "#ff0055",
+                  fontWeight: "bold",
+                  fontSize: 12,
+                  marginBottom: 2,
+                }}
+              >
+                🔴 Sistema Límbico (Instinto y Comodidad)
+              </Text>
+              <Text
+                style={{
+                  color: "#d1d5db",
+                  fontSize: 11,
+                  lineHeight: 15,
+                  marginBottom: 15,
+                }}
+              >
+                El centro emocional primitivo del cerebro. Busca el placer
+                inmediato y evita el esfuerzo (zona de confort).
+              </Text>
+
+              <View
+                style={{
+                  height: 2,
+                  backgroundColor: "#ff0055",
+                  width: "100%",
+                  marginBottom: 15,
+                }}
+              />
+
+              <Text
+                style={{
+                  color: "#ff0055",
+                  fontWeight: "bold",
+                  fontSize: 13,
+                  marginBottom: 4,
+                }}
+              >
+                🔥 SEMANA HELL WEEK (SEMANA DEL INFIERNO)
+              </Text>
+              <Text
+                style={{
+                  color: "#d1d5db",
+                  fontSize: 11,
+                  lineHeight: 16,
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ fontWeight: "bold", color: "#fff" }}>
+                  ¿Qué es?
+                </Text>{" "}
+                Inspirada en el entrenamiento límite de los Navy SEALs y
+                popularizada por David Goggins, es el estado de combate mental
+                extremo donde te enfrentas cara a cara con tu debilidad.
+              </Text>
+              <Text
+                style={{
+                  color: "#d1d5db",
+                  fontSize: 11,
+                  lineHeight: 16,
+                  marginBottom: 8,
+                }}
+              >
+                <Text style={{ fontWeight: "bold", color: "#fff" }}>
+                  ¿Por qué se activa?
+                </Text>{" "}
+                La app la enciende automáticamente cuando acumulas más fallos
+                (✖) que aciertos (✔), superando el 30% de dominancia de tu
+                sistema límbico. Te avisa que estás cayendo en la comodidad.
+              </Text>
+              <Text
+                style={{
+                  color: "#d1d5db",
+                  fontSize: 11,
+                  lineHeight: 16,
+                  marginBottom: 15,
+                }}
+              >
+                <Text style={{ fontWeight: "bold", color: "#fff" }}>
+                  ¿Cómo salir de ella?
+                </Text>{" "}
+                No hay atajos ni excusas. Debes romper las cadenas del confort,
+                cumplir tus hábitos diarios y lograr que tu dominio prefrontal
+                vuelva a superar a tus fallos para que la app recupere su tono
+                de disciplina óptima. ¡Stay Hard!
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => setModalAyudaVisible(false)}
+                style={styles.closeBtnModal}
+              >
+                <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                  ENTENDIDO
+                </Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </View>
       </Modal>
