@@ -44,7 +44,7 @@ const LISTA_FILOSOFIA = [
 const FRASES_GOGGINS_SUCCESS = [
   "Stay Hard! Te estás volviendo imparable.",
   "Estás construyendo callos en la mente. ¡Sigue empujando!",
-  "Rompiendo tus propios límites. ¡Eso es mentalidad de 1%!",
+  "Rompiendo tus propios límites. ¡Isis es mentalidad de 1%!",
   "No paren cuando estén cansados, paren cuando hayan TERMINADO.",
   "La única persona en el espejo puede frenarte. ¡Bien hecho!",
   "Dominio absoluto de la corteza prefrontal. ¡Imparable!",
@@ -98,59 +98,91 @@ const RANGOS_GOGGINS = [
   },
 ];
 
+interface Habito {
+  id: number;
+  nombre: string;
+  checks: (string | null)[];
+}
+
+interface Rango {
+  nivel: number;
+  meta: number;
+  nombre: string;
+  desc: string;
+  img: any;
+}
+
+// Función auxiliar para obtener el número de la semana actual del año
+const obtenerNumeroSemana = (d: Date) => {
+  const date = new Date(d.getTime());
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
+  const week1 = new Date(date.getFullYear(), 0, 4);
+  return (
+    Math.round(
+      ((date.getTime() - week1.getTime()) / 86400000 -
+        3 +
+        ((week1.getDay() + 6) % 7)) /
+        7,
+    ) + 1
+  );
+};
+
 export default function App() {
-  const [habitos, setHabitos] = useState<any[]>([]);
-  const [fraseActual, setFraseActual] = useState(LISTA_FILOSOFIA[0]);
-  const [menuAbierto, setMenuAbierto] = useState(false);
-  const [modalAyudaVisible, setModalAyudaVisible] = useState(false);
-  const [modalNuevoHabito, setModalNuevoHabito] = useState(false);
-  const [nombreNuevoHabito, setNombreNuevoHabito] = useState("");
-  const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
+  const [habitos, setHabitos] = useState<Habito[]>([]);
+  const [fraseActual, setFraseActual] = useState<string>(LISTA_FILOSOFIA[0]);
+  const [menuAbierto, setMenuAbierto] = useState<boolean>(false);
+  const [modalAyudaVisible, setModalAyudaVisible] = useState<boolean>(false);
+  const [modalNuevoHabito, setModalNuevoHabito] = useState<boolean>(false);
+  const [nombreNuevoHabito, setNombreNuevoHabito] = useState<string>("");
+  const [modalGogginsVisible, setModalGogginsVisible] =
+    useState<boolean>(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
-  const [modalRangosVisible, setModalRangosVisible] = useState(false);
-  const [modalHistorialVisible, setModalHistorialVisible] = useState(false);
-  const [modalSemanaVisible, setModalSemanaVisible] = useState(false);
-  const [modalMeditacionVisible, setModalMeditacionVisible] = useState(false);
+  const [modalRangosVisible, setModalRangosVisible] = useState<boolean>(false);
+  const [modalHistorialVisible, setModalHistorialVisible] =
+    useState<boolean>(false);
+  const [modalSemanaVisible, setModalSemanaVisible] = useState<boolean>(false);
+  const [modalMeditacionVisible, setModalMeditacionVisible] =
+    useState<boolean>(false);
+  const [modalAlertaLimbicaVisible, setModalAlertaLimbicaVisible] =
+    useState<boolean>(false);
+  const [modalAscensoVisible, setModalAscensoVisible] =
+    useState<boolean>(false);
+  const [mensajeAscenso, setMensajeAscenso] = useState<string>("");
 
-  const [minutosMeditacion, setMinutosMeditacion] = useState("1");
-  const [tiempoRestante, setTiempoRestante] = useState(0);
-  const [meditando, setMeditando] = useState(false);
+  const [habitoSeleccionadoTexto, setHabitoSeleccionadoTexto] = useState<
+    string | null
+  >(null);
+
+  const [minutosMeditacion, setMinutosMeditacion] = useState<string>("5");
+  const [tiempoRestante, setTiempoRestante] = useState<number>(0);
+  const [meditando, setMeditando] = useState<boolean>(false);
 
   const animPrefrontal = useRef(new Animated.Value(0)).current;
   const animLimbico = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    cargarDatos();
+    verificarYReiniciarSemana();
   }, []);
 
-  // Timer y Alarma de Meditación con patrón de vibración fuerte de campana
   useEffect(() => {
     let interval: any = null;
     if (meditando && tiempoRestante > 0) {
-      interval = setInterval(() => {
-        setTiempoRestante((prev) => prev - 1);
-      }, 1000);
+      interval = setInterval(() => setTiempoRestante((prev) => prev - 1), 1000);
     } else if (tiempoRestante === 0 && meditando) {
       setMeditando(false);
-
-      // Patrón de vibración tipo campanada (Vibra, pausa, vibra fuerte)
-      const pattern = [0, 600, 200, 600, 200, 1000];
-      Vibration.vibrate(pattern);
-
-      // Alerta con botones para asegurar atención sonora y visual en Android
+      Vibration.vibrate([0, 600, 200, 600, 200, 1000]);
       Alert.alert(
         "🔔 ¡CAMPANA TIBETANA (432Hz)! 🔔",
-        "La sesión de meditación ha concluido. Ya podés abrir los ojos, respirar hondo y volver al ruedo. ¡Stay Hard! 💀",
-        [{ text: "ENTENDIDO", onPress: () => Vibration.cancel() }],
-        { cancelable: false },
+        "Sesión de meditación concluida. Abrí los ojos y volvé al ruedo. Stay Hard! 💀",
       );
     }
     return () => clearInterval(interval);
   }, [meditando, tiempoRestante]);
 
   const iniciarMeditacion = () => {
-    const mins = parseInt(minutosMeditacion) || 1;
+    const mins = parseInt(minutosMeditacion) || 5;
     setTiempoRestante(mins * 60);
     setMeditando(true);
   };
@@ -161,27 +193,84 @@ export default function App() {
     return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
   };
 
-  const cargarDatos = async () => {
+  // SISTEMA DE REINICIO SEMANAL AUTOMÁTICO Y EVALUACIÓN DE RANGO
+  const verificarYReiniciarSemana = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V19");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V22");
+      const ultimaSemanaGuardada = await AsyncStorage.getItem(
+        "NEURO_HABITS_ULTIMA_SEMANA",
+      );
+      const nivelActualStr =
+        (await AsyncStorage.getItem("NEURO_HABITS_NIVEL")) || "1";
+
+      const semanaActual = obtenerNumeroSemana(new Date());
+
       if (stored) {
-        const parsed = JSON.parse(stored);
-        setHabitos(parsed);
-        actualizarAnimacionCerebro(parsed);
+        let parsedHabitos: Habito[] = JSON.parse(stored);
+
+        // Si cambió la semana, evaluamos el rendimiento de la semana que pasó
+        if (
+          ultimaSemanaGuardada &&
+          parseInt(ultimaSemanaGuardada) !== semanaActual
+        ) {
+          const totalChecks = parsedHabitos.length * 7;
+          let cumplidos = 0;
+          parsedHabitos.forEach((h: Habito) => {
+            cumplidos += h.checks.filter(
+              (c: string | null) => c === "YES",
+            ).length;
+          });
+          const pctPrefrontalSemana =
+            totalChecks > 0 ? Math.round((cumplidos / totalChecks) * 100) : 0;
+
+          let nivelNum = parseInt(nivelActualStr);
+          // Si alcanzó el 50% o más, sube de nivel (hasta nivel máximo 5)
+          if (pctPrefrontalSemana >= 50 && nivelNum < 5) {
+            nivelNum += 1;
+            await AsyncStorage.setItem(
+              "NEURO_HABITS_NIVEL",
+              nivelNum.toString(),
+            );
+            const nuevoRango = RANGOS_GOGGINS.find((r) => r.nivel === nivelNum);
+            setMensajeAscenso(
+              `¡Felicidades! Lograsiste un ${pctPrefrontalSemana}% de disciplina prefrontal la semana pasada. Te volviste más malditamente duro. ¡Ahora sos ${nuevoRango?.nombre}!\n\nLos hábitos continúan, los ticks se reiniciaron. ¡A seguir sufriendo! 💀🔥`,
+            );
+            setModalAscensoVisible(true);
+          } else {
+            setMensajeAscenso(
+              `Comenzó una nueva semana. Tu rendimiento anterior fue de ${pctPrefrontalSemana}%. Los hábitos siguen en pie, ¡es hora de revalidar tu dureza mental!`,
+            );
+            setModalAscensoVisible(true);
+          }
+
+          // Reiniciamos automáticamente los ticks de todos los hábitos (los nombres se mantienen)
+          parsedHabitos = parsedHabitos.map((h: Habito) => ({
+            ...h,
+            checks: [null, null, null, null, null, null, null],
+          }));
+        }
+
+        setHabitos(parsedHabitos);
+        actualizarAnimacionCerebro(parsedHabitos);
       } else {
         setHabitos([]);
       }
+
+      await AsyncStorage.setItem(
+        "NEURO_HABITS_ULTIMA_SEMANA",
+        semanaActual.toString(),
+      );
     } catch (e) {
       console.error(e);
     }
   };
 
-  const guardarYActualizar = async (nuevosHabitos: any[]) => {
+  const guardarYActualizar = async (nuevosHabitos: Habito[]) => {
     setHabitos(nuevosHabitos);
     actualizarAnimacionCerebro(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V19",
+        "NEURO_HABITS_MOBILE_V22",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -189,14 +278,14 @@ export default function App() {
     }
   };
 
-  const actualizarAnimacionCerebro = (listaHabitos: any[]) => {
+  const actualizarAnimacionCerebro = (listaHabitos: Habito[]) => {
     const totalChecks = listaHabitos.length * 7;
     let cumplidos = 0;
     let fallados = 0;
 
-    listaHabitos.forEach((h: any) => {
-      cumplidos += h.checks.filter((c: string) => c === "YES").length;
-      fallados += h.checks.filter((c: string) => c === "NO").length;
+    listaHabitos.forEach((h: Habito) => {
+      cumplidos += h.checks.filter((c: string | null) => c === "YES").length;
+      fallados += h.checks.filter((c: string | null) => c === "NO").length;
     });
 
     const targetPrefrontal =
@@ -216,6 +305,10 @@ export default function App() {
         useNativeDriver: true,
       }),
     ]).start();
+
+    if (fallados > cumplidos && fallados >= 3) {
+      setModalAlertaLimbicaVisible(true);
+    }
   };
 
   const manejarClickCelda = (hIdx: number, dIdx: number) => {
@@ -273,7 +366,7 @@ export default function App() {
           text: "Sí, borrar",
           style: "destructive",
           onPress: () => {
-            const nuevos = habitos.filter((_, idx) => idx !== hIdx);
+            const nuevos = habitos.filter((_, idx: number) => idx !== hIdx);
             guardarYActualizar(nuevos);
           },
         },
@@ -281,12 +374,21 @@ export default function App() {
     );
   };
 
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const mesActual = hoy.getMonth();
+  const totalDiasMes = new Date(anioActual, mesActual + 1, 0).getDate();
+  const nombreMes = hoy.toLocaleString("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
+
   const totalChecks = habitos.length * 7;
   let cumplidos = 0;
   let fallados = 0;
-  habitos.forEach((h) => {
-    cumplidos += h.checks.filter((c: string) => c === "YES").length;
-    fallados += h.checks.filter((c: string) => c === "NO").length;
+  habitos.forEach((h: Habito) => {
+    cumplidos += h.checks.filter((c: string | null) => c === "YES").length;
+    fallados += h.checks.filter((c: string | null) => c === "NO").length;
   });
 
   const pctPrefrontal =
@@ -294,36 +396,93 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
+  const esHellWeek = pctLimbico > pctPrefrontal && pctLimbico > 30;
+
   return (
-    <View style={styles.mainContainer}>
-      <View style={styles.header}>
+    <View
+      style={[
+        styles.mainContainer,
+        esHellWeek && { backgroundColor: "#140505" },
+      ]}
+    >
+      <View
+        style={[styles.header, esHellWeek && { borderBottomColor: "#ff0055" }]}
+      >
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
           style={styles.menuButton}
         >
-          <Text style={styles.menuIcon}>☰</Text>
+          <Text style={[styles.menuIcon, esHellWeek && { color: "#ff0055" }]}>
+            ☰
+          </Text>
         </TouchableOpacity>
 
         <View style={styles.headerTitles}>
-          <Text style={styles.title}>NEURO HABITS</Text>
-          <Text style={styles.subtitle}>created by sandev</Text>
+          <Text style={[styles.title, esHellWeek && { color: "#ff0055" }]}>
+            NEURO HABITS
+          </Text>
+          <Text style={[styles.subtitle, esHellWeek && { color: "#ff88aa" }]}>
+            created by sandev
+          </Text>
         </View>
 
         <View style={{ width: 30 }} />
       </View>
 
       <ScrollView style={styles.container}>
+        {/* Racha de Fuego con colores optimizados para Hell Week */}
+        <View
+          style={[
+            styles.streakCard,
+            esHellWeek && {
+              borderColor: "#ff0055",
+              backgroundColor: "#1f1012",
+            },
+          ]}
+        >
+          <Text style={[styles.streakText, esHellWeek && { color: "#ffccd5" }]}>
+            🔥 Racha Prefrontal:{" "}
+            <Text style={{ color: "#00f0ff" }}>{pctPrefrontal}% Dominio</Text>
+          </Text>
+          <Text
+            style={[styles.streakSubText, esHellWeek && { color: "#ff99bb" }]}
+          >
+            {esHellWeek
+              ? "⚠️ MODO HELL WEEK ACTIVADO: ¡Pelea contra tu sistema límbico!"
+              : "Mantén la disciplina al máximo. Stay Hard!"}
+          </Text>
+        </View>
+
         <TouchableOpacity
-          style={styles.quoteCard}
+          style={[
+            styles.quoteCard,
+            esHellWeek && {
+              backgroundColor: "#1c090b",
+              borderLeftColor: "#ff0055",
+            },
+          ]}
           onPress={cambiarFraseAleatoria}
         >
-          <Text style={styles.quoteText}>{fraseActual}</Text>
-          <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
+          <Text style={[styles.quoteText, esHellWeek && { color: "#ffccd5" }]}>
+            {fraseActual}
+          </Text>
+          <Text style={[styles.quoteHint, esHellWeek && { color: "#ff99bb" }]}>
+            Toca para cambiar frase 🔄
+          </Text>
         </TouchableOpacity>
 
-        <View style={styles.brainCard}>
+        <View
+          style={[
+            styles.brainCard,
+            esHellWeek && { backgroundColor: "#1a080a" },
+          ]}
+        >
           <View style={styles.brainHeader}>
-            <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
+            <Text
+              style={[styles.brainTitle, esHellWeek && { color: "#ffccd5" }]}
+            >
+              🧠 Respuesta Neuroquímica
+            </Text>
             <TouchableOpacity onPress={() => setModalAyudaVisible(true)}>
               <Text style={styles.smallQuestion}>?</Text>
             </TouchableOpacity>
@@ -345,11 +504,15 @@ export default function App() {
           </View>
 
           <View style={styles.brainStatsBox}>
-            <Text style={styles.brainStatText}>
+            <Text
+              style={[styles.brainStatText, esHellWeek && { color: "#ffccd5" }]}
+            >
               Mejoraste tu corteza prefrontal:{" "}
               <Text style={{ color: "#00f0ff" }}>{pctPrefrontal}%</Text>
             </Text>
-            <Text style={styles.brainStatText}>
+            <Text
+              style={[styles.brainStatText, esHellWeek && { color: "#ffccd5" }]}
+            >
               Tu sistema límbico aumentó:{" "}
               <Text style={{ color: "#ff0055" }}>{pctLimbico}%</Text>
             </Text>
@@ -363,11 +526,27 @@ export default function App() {
           <Text style={styles.btnAddHabitText}>+ Nuevo Hábito</Text>
         </TouchableOpacity>
 
-        <View style={styles.tableContainer}>
+        <View
+          style={[
+            styles.tableContainer,
+            esHellWeek && { backgroundColor: "#1a080a" },
+          ]}
+        >
           <View style={styles.tableHeader}>
-            <Text style={[styles.headerCell, { flex: 2 }]}>Hábitos</Text>
-            {DIAS.map((d, i) => (
-              <Text key={i} style={styles.headerDay}>
+            <Text
+              style={[
+                styles.headerCell,
+                { flex: 2 },
+                esHellWeek && { color: "#ff99bb" },
+              ]}
+            >
+              Hábitos
+            </Text>
+            {DIAS.map((d: string, i: number) => (
+              <Text
+                key={i}
+                style={[styles.headerDay, esHellWeek && { color: "#ff99bb" }]}
+              >
                 {d}
               </Text>
             ))}
@@ -378,11 +557,24 @@ export default function App() {
               No hay hábitos. ¡Agregá uno con el botón de arriba!
             </Text>
           ) : (
-            habitos.map((h, hIdx) => (
+            habitos.map((h: Habito, hIdx: number) => (
               <View key={h.id} style={styles.tableRow}>
-                <Text style={styles.habitoNombre} numberOfLines={1}>
-                  {h.nombre}
-                </Text>
+                {/* Toca el nombre para abrir el modal si el texto es largo */}
+                <TouchableOpacity
+                  style={{ flex: 2 }}
+                  onPress={() => setHabitoSeleccionadoTexto(h.nombre)}
+                >
+                  <Text
+                    style={[
+                      styles.habitoNombre,
+                      esHellWeek && { color: "#fff" },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {h.nombre}
+                  </Text>
+                </TouchableOpacity>
+
                 {h.checks.map((chk: string | null, dIdx: number) => {
                   let cellStyle: any = styles.cell;
                   let simbol = "";
@@ -418,10 +610,86 @@ export default function App() {
           )}
         </View>
 
-        <Text style={styles.instructionFooter}>
-          💡 1 toque: Cumplido (✔) | 2 toques: Fallado (✖) | 3 toques: Vacío
+        <Text
+          style={[styles.instructionFooter, esHellWeek && { color: "#ff99bb" }]}
+        >
+          💡 Toca un hábito largo para leerlo completo | 1 toque: (✔) | 2
+          toques: (✖)
         </Text>
       </ScrollView>
+
+      {/* MODAL PARA VER TEXTO LARGO DEL HÁBITO CON SCROLL */}
+      <Modal
+        visible={habitoSeleccionadoTexto !== null}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <Text
+              style={{
+                color: "#00f0ff",
+                fontSize: 14,
+                fontWeight: "bold",
+                marginBottom: 10,
+              }}
+            >
+              📌 Detalle del Hábito:
+            </Text>
+            <ScrollView style={{ maxHeight: 150, marginBottom: 15 }}>
+              <Text style={{ color: "#fff", fontSize: 15, lineHeight: 22 }}>
+                {habitoSeleccionadoTexto}
+              </Text>
+            </ScrollView>
+            <TouchableOpacity
+              onPress={() => setHabitoSeleccionadoTexto(null)}
+              style={styles.closeBtnModal}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>CERRAR</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL DE ASCENSO DE RANGO SEMANAL */}
+      <Modal
+        visible={modalAscensoVisible}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentGrande, { borderColor: "#00f0ff" }]}>
+            <Text
+              style={{
+                color: "#00f0ff",
+                fontSize: 16,
+                fontWeight: "bold",
+                marginBottom: 10,
+              }}
+            >
+              🏆 ¡REPORTE SEMANAL & ASCENSO!
+            </Text>
+            <Text
+              style={{
+                color: "#e2e8f0",
+                fontSize: 13,
+                lineHeight: 20,
+                marginBottom: 20,
+              }}
+            >
+              {mensajeAscenso}
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalAscensoVisible(false)}
+              style={[styles.closeBtnModal, { backgroundColor: "#00f0ff" }]}
+            >
+              <Text style={{ color: "#000", fontWeight: "bold" }}>
+                ¡ENTENDIDO, A SEGUIR SUFRIENDO!
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* MENÚ HAMBURGUESA LATERAL */}
       <Modal visible={menuAbierto} animationType="slide" transparent={true}>
@@ -499,7 +767,7 @@ export default function App() {
               </TouchableOpacity>
             </View>
             <ScrollView>
-              {RANGOS_GOGGINS.map((r) => (
+              {RANGOS_GOGGINS.map((r: Rango) => (
                 <TouchableOpacity
                   key={r.nivel}
                   style={styles.rangoItem}
@@ -523,7 +791,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 2: HISTORIAL MENSUAL */}
+      {/* MODAL 2: HISTORIAL MENSUAL DINÁMICO */}
       <Modal
         visible={modalHistorialVisible}
         animationType="slide"
@@ -540,9 +808,9 @@ export default function App() {
               }}
             >
               <Text
-                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+                style={{ color: "#00f0ff", fontSize: 15, fontWeight: "bold" }}
               >
-                📜 Historial Mensual (Octubre 2026)
+                📜 Historial ({nombreMes})
               </Text>
               <TouchableOpacity onPress={() => setModalHistorialVisible(false)}>
                 <Text
@@ -583,8 +851,8 @@ export default function App() {
                 <Text
                   style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "bold" }}
                 >
-                  Día actual ({new Date().getDate()}):{" "}
-                  {pctPrefrontal > 0
+                  Día actual ({hoy.getDate()}):{" "}
+                  {pctPrefrontal >= pctLimbico
                     ? `${pctPrefrontal}% Prefrontal`
                     : `${pctLimbico}% Límbico`}
                 </Text>
@@ -599,60 +867,49 @@ export default function App() {
                   marginBottom: 15,
                 }}
               >
-                {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => {
-                  const esHoy = dia === new Date().getDate();
-                  const bg = esHoy
-                    ? pctPrefrontal >= pctLimbico
-                      ? "#00f0ff"
-                      : "#ff0055"
-                    : "#1f2937";
-                  const textColor = esHoy ? "#000" : "#94a3b8";
-                  return (
-                    <View
-                      key={dia}
-                      style={{
-                        width: 38,
-                        height: 38,
-                        backgroundColor: bg,
-                        borderRadius: 6,
-                        justifyContent: "center",
-                        alignItems: "center",
-                      }}
-                    >
-                      <Text
+                {Array.from({ length: totalDiasMes }, (_, i) => i + 1).map(
+                  (dia: number) => {
+                    const esHoy = dia === hoy.getDate();
+                    const bg = esHoy
+                      ? pctPrefrontal >= pctLimbico
+                        ? "#00f0ff"
+                        : "#ff0055"
+                      : "#1f2937";
+                    const textColor = esHoy ? "#000" : "#94a3b8";
+                    return (
+                      <View
+                        key={dia}
                         style={{
-                          color: textColor,
-                          fontWeight: "bold",
-                          fontSize: 11,
+                          width: 38,
+                          height: 38,
+                          backgroundColor: bg,
+                          borderRadius: 6,
+                          justifyContent: "center",
+                          alignItems: "center",
                         }}
                       >
-                        {dia}
-                      </Text>
-                      {esHoy && (
-                        <Text style={{ color: textColor, fontSize: 8 }}>
-                          {pctPrefrontal}%
+                        <Text
+                          style={{
+                            color: textColor,
+                            fontWeight: "bold",
+                            fontSize: 11,
+                          }}
+                        >
+                          {dia}
                         </Text>
-                      )}
-                    </View>
-                  );
-                })}
+                        {esHoy && (
+                          <Text style={{ color: textColor, fontSize: 8 }}>
+                            {pctPrefrontal >= pctLimbico
+                              ? pctPrefrontal
+                              : pctLimbico}
+                            %
+                          </Text>
+                        )}
+                      </View>
+                    );
+                  },
+                )}
               </View>
-
-              <Text
-                style={{ color: "#94a3b8", fontSize: 11, textAlign: "center" }}
-              >
-                Promedio del mes: 73%
-              </Text>
-              <Text
-                style={{
-                  color: "#00f0ff",
-                  fontSize: 11,
-                  textAlign: "center",
-                  marginTop: 4,
-                }}
-              >
-                Últimos 7 días: 91% - ▲ +27 pts vs. los 7 anteriores
-              </Text>
             </ScrollView>
           </View>
         </View>
@@ -696,16 +953,16 @@ export default function App() {
                   marginBottom: 10,
                 }}
               >
-                Semana del 19/10 — Dominio prefrontal: 18%
+                Dominio prefrontal general: {pctPrefrontal}%
               </Text>
               {habitos.length === 0 ? (
                 <Text style={{ color: "#64748b", fontSize: 12 }}>
-                  No hay hábitos registrados para calcular.
+                  No hay hábitos registrados.
                 </Text>
               ) : (
-                habitos.map((h) => {
+                habitos.map((h: Habito) => {
                   const cumplidosH = h.checks.filter(
-                    (c: string) => c === "YES",
+                    (c: string | null) => c === "YES",
                   ).length;
                   return (
                     <Text
@@ -805,6 +1062,48 @@ export default function App() {
                 }}
               >
                 {meditando ? "Pausar Meditación" : "▶ Iniciar Meditación"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL ADVERTENCIA MODO LÍMBICO */}
+      <Modal
+        visible={modalAlertaLimbicaVisible}
+        animationType="fade"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentGrande, { borderColor: "#ff0055" }]}>
+            <Text
+              style={{
+                color: "#ff0055",
+                fontSize: 16,
+                fontWeight: "bold",
+                marginBottom: 10,
+              }}
+            >
+              ⚠️ ¡ALERTA DE SISTEMA LÍMBICO!
+            </Text>
+            <Text
+              style={{
+                color: "#e2e8f0",
+                fontSize: 12,
+                lineHeight: 18,
+                marginBottom: 15,
+              }}
+            >
+              Estás acumulando demasiados fallos. La comodidad te está ganando.
+              ¿En serio vas a dejar que tus impulsos ganen hoy? ¡Levantate y
+              cambiá el rumbo ahora mismo! Stay Hard! 💀
+            </Text>
+            <TouchableOpacity
+              onPress={() => setModalAlertaLimbicaVisible(false)}
+              style={[styles.closeBtnModal, { backgroundColor: "#ff0055" }]}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+                ACEPTO EL RETO
               </Text>
             </TouchableOpacity>
           </View>
@@ -972,7 +1271,7 @@ export default function App() {
               onPress={() => setModalAyudaVisible(false)}
               style={styles.closeBtnModal}
             >
-              <Text style={{ color: "#00f0ff", fontWeight: "bold" }}>
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>
                 ENTENDIDO
               </Text>
             </TouchableOpacity>
@@ -1007,6 +1306,24 @@ const styles = StyleSheet.create({
   },
   subtitle: { fontSize: 10, color: "#94a3b8", letterSpacing: 2 },
   container: { flex: 1, padding: 16 },
+
+  streakCard: {
+    backgroundColor: "#111827",
+    borderRadius: 8,
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#00f0ff",
+    marginBottom: 15,
+    alignItems: "center",
+  },
+  streakText: { color: "#e2e8f0", fontSize: 12, fontWeight: "bold" },
+  streakSubText: {
+    color: "#64748b",
+    fontSize: 9,
+    textAlign: "center",
+    marginTop: 2,
+  },
+
   quoteCard: {
     backgroundColor: "#111827",
     borderRadius: 8,
