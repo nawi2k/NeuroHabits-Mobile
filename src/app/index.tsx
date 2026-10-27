@@ -113,7 +113,7 @@ export default function App() {
   const [modalSemanaVisible, setModalSemanaVisible] = useState(false);
   const [modalMeditacionVisible, setModalMeditacionVisible] = useState(false);
 
-  const [minutosMeditacion, setMinutosMeditacion] = useState("5");
+  const [minutosMeditacion, setMinutosMeditacion] = useState("1");
   const [tiempoRestante, setTiempoRestante] = useState(0);
   const [meditando, setMeditando] = useState(false);
 
@@ -124,7 +124,7 @@ export default function App() {
     cargarDatos();
   }, []);
 
-  // Timer y Alarma de Meditación con Vibración y Alerta Sonora/Visual
+  // Timer y Alarma de Meditación con patrón de vibración fuerte de campana
   useEffect(() => {
     let interval: any = null;
     if (meditando && tiempoRestante > 0) {
@@ -133,18 +133,24 @@ export default function App() {
       }, 1000);
     } else if (tiempoRestante === 0 && meditando) {
       setMeditando(false);
-      // Alarma háptica y alerta en pantalla para abrir los ojos
-      Vibration.vibrate([500, 500, 500, 500, 500]);
+
+      // Patrón de vibración tipo campanada (Vibra, pausa, vibra fuerte)
+      const pattern = [0, 600, 200, 600, 200, 1000];
+      Vibration.vibrate(pattern);
+
+      // Alerta con botones para asegurar atención sonora y visual en Android
       Alert.alert(
-        "🔔 ¡FIN DE LA MEDITACIÓN!",
-        "Campana tibetana finalizada. Ya podés abrir los ojos y volver al ruedo. Stay Hard! 💀",
+        "🔔 ¡CAMPANA TIBETANA (432Hz)! 🔔",
+        "La sesión de meditación ha concluido. Ya podés abrir los ojos, respirar hondo y volver al ruedo. ¡Stay Hard! 💀",
+        [{ text: "ENTENDIDO", onPress: () => Vibration.cancel() }],
+        { cancelable: false },
       );
     }
     return () => clearInterval(interval);
   }, [meditando, tiempoRestante]);
 
   const iniciarMeditacion = () => {
-    const mins = parseInt(minutosMeditacion) || 5;
+    const mins = parseInt(minutosMeditacion) || 1;
     setTiempoRestante(mins * 60);
     setMeditando(true);
   };
@@ -157,7 +163,7 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V18");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V19");
       if (stored) {
         const parsed = JSON.parse(stored);
         setHabitos(parsed);
@@ -175,7 +181,7 @@ export default function App() {
     actualizarAnimacionCerebro(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V18",
+        "NEURO_HABITS_MOBILE_V19",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -463,7 +469,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 1: PROGRESO DE RANGOS (Cierra solo este modal, el menú hamburguesa queda abierto) */}
+      {/* MODAL 1: PROGRESO DE RANGOS */}
       <Modal
         visible={modalRangosVisible}
         animationType="slide"
@@ -723,7 +729,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 4: MÓDULO DE MEDITACIÓN CON ALARMA */}
+      {/* MODAL 4: MÓDULO DE MEDITACIÓN */}
       <Modal
         visible={modalMeditacionVisible}
         animationType="slide"
@@ -966,7 +972,7 @@ export default function App() {
               onPress={() => setModalAyudaVisible(false)}
               style={styles.closeBtnModal}
             >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>
+              <Text style={{ color: "#00f0ff", fontWeight: "bold" }}>
                 ENTENDIDO
               </Text>
             </TouchableOpacity>
