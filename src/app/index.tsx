@@ -10,6 +10,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  Vibration,
   View,
 } from "react-native";
 
@@ -107,13 +108,11 @@ export default function App() {
   const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
-  // Estados para nuevas secciones del menú
   const [modalRangosVisible, setModalRangosVisible] = useState(false);
   const [modalHistorialVisible, setModalHistorialVisible] = useState(false);
   const [modalSemanaVisible, setModalSemanaVisible] = useState(false);
   const [modalMeditacionVisible, setModalMeditacionVisible] = useState(false);
 
-  // Estados de Meditación
   const [minutosMeditacion, setMinutosMeditacion] = useState("5");
   const [tiempoRestante, setTiempoRestante] = useState(0);
   const [meditando, setMeditando] = useState(false);
@@ -125,7 +124,7 @@ export default function App() {
     cargarDatos();
   }, []);
 
-  // Timer de meditación
+  // Timer y Alarma de Meditación con Vibración y Alerta Sonora/Visual
   useEffect(() => {
     let interval: any = null;
     if (meditando && tiempoRestante > 0) {
@@ -134,9 +133,11 @@ export default function App() {
       }, 1000);
     } else if (tiempoRestante === 0 && meditando) {
       setMeditando(false);
+      // Alarma háptica y alerta en pantalla para abrir los ojos
+      Vibration.vibrate([500, 500, 500, 500, 500]);
       Alert.alert(
-        "🧘‍♂️ Meditación Completa",
-        "¡Excelente sesión! Tu corteza prefrontal te lo agradece.",
+        "🔔 ¡FIN DE LA MEDITACIÓN!",
+        "Campana tibetana finalizada. Ya podés abrir los ojos y volver al ruedo. Stay Hard! 💀",
       );
     }
     return () => clearInterval(interval);
@@ -156,7 +157,7 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V17");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V18");
       if (stored) {
         const parsed = JSON.parse(stored);
         setHabitos(parsed);
@@ -174,7 +175,7 @@ export default function App() {
     actualizarAnimacionCerebro(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V17",
+        "NEURO_HABITS_MOBILE_V18",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -289,7 +290,6 @@ export default function App() {
 
   return (
     <View style={styles.mainContainer}>
-      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
@@ -307,7 +307,6 @@ export default function App() {
       </View>
 
       <ScrollView style={styles.container}>
-        {/* FRASES MOTIVACIONALES */}
         <TouchableOpacity
           style={styles.quoteCard}
           onPress={cambiarFraseAleatoria}
@@ -316,7 +315,6 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON CAPAS ANIMADAS */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -352,7 +350,6 @@ export default function App() {
           </View>
         </View>
 
-        {/* BOTÓN NUEVO HÁBITO */}
         <TouchableOpacity
           style={styles.btnAddHabit}
           onPress={() => setModalNuevoHabito(true)}
@@ -360,7 +357,6 @@ export default function App() {
           <Text style={styles.btnAddHabitText}>+ Nuevo Hábito</Text>
         </TouchableOpacity>
 
-        {/* PLANILLA DE HÁBITOS */}
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
             <Text style={[styles.headerCell, { flex: 2 }]}>Hábitos</Text>
@@ -421,7 +417,7 @@ export default function App() {
         </Text>
       </ScrollView>
 
-      {/* MENÚ HAMBURGUESA LATERAL (OPCIONES ESCONDIDAS) */}
+      {/* MENÚ HAMBURGUESA LATERAL */}
       <Modal visible={menuAbierto} animationType="slide" transparent={true}>
         <View style={styles.drawerOverlay}>
           <View style={styles.drawerContent}>
@@ -435,30 +431,21 @@ export default function App() {
             <ScrollView>
               <TouchableOpacity
                 style={styles.menuItemBtn}
-                onPress={() => {
-                  setMenuAbierto(false);
-                  setModalRangosVisible(true);
-                }}
+                onPress={() => setModalRangosVisible(true)}
               >
                 <Text style={styles.menuItemText}>🏆 Progreso de Rangos</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.menuItemBtn}
-                onPress={() => {
-                  setMenuAbierto(false);
-                  setModalHistorialVisible(true);
-                }}
+                onPress={() => setModalHistorialVisible(true)}
               >
                 <Text style={styles.menuItemText}>📜 Historial Mensual</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.menuItemBtn}
-                onPress={() => {
-                  setMenuAbierto(false);
-                  setModalSemanaVisible(true);
-                }}
+                onPress={() => setModalSemanaVisible(true)}
               >
                 <Text style={styles.menuItemText}>
                   📊 Rendimiento Semana Pasada
@@ -467,10 +454,7 @@ export default function App() {
 
               <TouchableOpacity
                 style={styles.menuItemBtn}
-                onPress={() => {
-                  setMenuAbierto(false);
-                  setModalMeditacionVisible(true);
-                }}
+                onPress={() => setModalMeditacionVisible(true)}
               >
                 <Text style={styles.menuItemText}>🧘‍♂️ Módulo de Meditación</Text>
               </TouchableOpacity>
@@ -479,7 +463,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 1: PROGRESO DE RANGOS */}
+      {/* MODAL 1: PROGRESO DE RANGOS (Cierra solo este modal, el menú hamburguesa queda abierto) */}
       <Modal
         visible={modalRangosVisible}
         animationType="slide"
@@ -600,7 +584,6 @@ export default function App() {
                 </Text>
               </View>
 
-              {/* Mini calendario simulado con el día de hoy marcado */}
               <View
                 style={{
                   flexDirection: "row",
@@ -715,7 +698,6 @@ export default function App() {
                 </Text>
               ) : (
                 habitos.map((h) => {
-                  // Contamos solo ticks (✔) y filtramos las X
                   const cumplidosH = h.checks.filter(
                     (c: string) => c === "YES",
                   ).length;
@@ -741,7 +723,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 4: MÓDULO DE MEDITACIÓN */}
+      {/* MODAL 4: MÓDULO DE MEDITACIÓN CON ALARMA */}
       <Modal
         visible={modalMeditacionVisible}
         animationType="slide"
@@ -777,7 +759,6 @@ export default function App() {
               </TouchableOpacity>
             </View>
 
-            {/* Círculo Timer */}
             <View style={styles.timerCircle}>
               <Text style={styles.timerText}>
                 {meditando
@@ -1181,13 +1162,6 @@ const styles = StyleSheet.create({
   },
   menuItemText: { color: "#00f0ff", fontSize: 13, fontWeight: "bold" },
 
-  sectionTitle: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 10,
-    marginTop: 10,
-  },
   rangoItem: {
     backgroundColor: "#1f2937",
     padding: 10,
