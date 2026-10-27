@@ -107,6 +107,7 @@ export default function App() {
   const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
+  // Valores animados con useRef para la opacidad gradual
   const animPrefrontal = useRef(new Animated.Value(0)).current;
   const animLimbico = useRef(new Animated.Value(0)).current;
 
@@ -116,11 +117,11 @@ export default function App() {
 
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V11");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V16");
       if (stored) {
         const parsed = JSON.parse(stored);
         setHabitos(parsed);
-        actualizarAnimaciones(parsed);
+        actualizarAnimacionCerebro(parsed);
       } else {
         setHabitos([]);
       }
@@ -131,10 +132,10 @@ export default function App() {
 
   const guardarYActualizar = async (nuevosHabitos: any[]) => {
     setHabitos(nuevosHabitos);
-    actualizarAnimaciones(nuevosHabitos);
+    actualizarAnimacionCerebro(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V11",
+        "NEURO_HABITS_MOBILE_V16",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -142,27 +143,31 @@ export default function App() {
     }
   };
 
-  const actualizarAnimaciones = (listaHabitos: any[]) => {
-    const total = listaHabitos.length * 7;
-    let comp = 0;
-    let fail = 0;
+  const actualizarAnimacionCerebro = (listaHabitos: any[]) => {
+    const totalChecks = listaHabitos.length * 7;
+    let cumplidos = 0;
+    let fallados = 0;
+
     listaHabitos.forEach((h: any) => {
-      comp += h.checks.filter((c: string) => c === "YES").length;
-      fail += h.checks.filter((c: string) => c === "NO").length;
+      cumplidos += h.checks.filter((c: string) => c === "YES").length;
+      fallados += h.checks.filter((c: string) => c === "NO").length;
     });
 
-    const targetPrefrontal = total > 0 ? Math.min(comp / total, 1) : 0;
-    const targetLimbico = total > 0 ? Math.min(fail / total, 1) : 0;
+    const targetPrefrontal =
+      totalChecks > 0 ? Math.min(cumplidos / totalChecks, 1) : 0;
+    const targetLimbico =
+      totalChecks > 0 ? Math.min(fallados / totalChecks, 1) : 0;
 
+    // Animación suave y fluida con duración de 800ms
     Animated.parallel([
       Animated.timing(animPrefrontal, {
         toValue: targetPrefrontal,
-        duration: 600,
+        duration: 800,
         useNativeDriver: true,
       }),
       Animated.timing(animLimbico, {
         toValue: targetLimbico,
-        duration: 600,
+        duration: 800,
         useNativeDriver: true,
       }),
     ]).start();
@@ -271,7 +276,7 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON IMAGEN ENCAJADA (RESIZE: CONTAIN) */}
+        {/* SECCIÓN CEREBRO CON CAPAS SUPERPUESTAS Y ANIMACIÓN GRADUAL */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -281,16 +286,19 @@ export default function App() {
           </View>
 
           <View style={styles.brainImageContainer}>
+            {/* Imagen Base Estática */}
             <Image
               source={require("../../assets/images/brain_base.png")}
               style={styles.brainImage}
             />
 
+            {/* Capa Animada: Corteza Prefrontal */}
             <Animated.Image
               source={require("../../assets/images/brain_prefrontal.png")}
               style={[styles.brainOverlay, { opacity: animPrefrontal }]}
             />
 
+            {/* Capa Animada: Sistema Límbico */}
             <Animated.Image
               source={require("../../assets/images/brain_limbico.png")}
               style={[styles.brainOverlay, { opacity: animLimbico }]}
@@ -642,22 +650,20 @@ const styles = StyleSheet.create({
   brainTitle: { color: "#fff", fontSize: 13, fontWeight: "bold" },
   smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
 
-  // Imagen encajada perfectamente usando resizeMode: 'contain'
+  // Contenedor estético con capas superpuestas perfectamente alineadas
   brainImageContainer: {
     width: "100%",
-    height: 190,
+    height: 180,
     borderRadius: 6,
     overflow: "hidden",
     position: "relative",
     marginBottom: 12,
-    backgroundColor: "#000",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: "#111827",
   },
   brainImage: {
     width: "100%",
     height: "100%",
-    resizeMode: "contain",
+    resizeMode: "cover",
   },
   brainOverlay: {
     position: "absolute",
@@ -665,7 +671,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: "100%",
     height: "100%",
-    resizeMode: "contain",
+    resizeMode: "cover",
   },
 
   brainStatsBox: { width: "100%", alignItems: "center" },
