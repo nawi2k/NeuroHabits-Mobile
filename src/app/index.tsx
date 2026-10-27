@@ -107,7 +107,17 @@ export default function App() {
   const [modalGogginsVisible, setModalGogginsVisible] = useState(false);
   const [fotoSeleccionada, setFotoSeleccionada] = useState<any>(null);
 
-  // Valores animados con useRef para la opacidad gradual
+  // Estados para nuevas secciones del menú
+  const [modalRangosVisible, setModalRangosVisible] = useState(false);
+  const [modalHistorialVisible, setModalHistorialVisible] = useState(false);
+  const [modalSemanaVisible, setModalSemanaVisible] = useState(false);
+  const [modalMeditacionVisible, setModalMeditacionVisible] = useState(false);
+
+  // Estados de Meditación
+  const [minutosMeditacion, setMinutosMeditacion] = useState("5");
+  const [tiempoRestante, setTiempoRestante] = useState(0);
+  const [meditando, setMeditando] = useState(false);
+
   const animPrefrontal = useRef(new Animated.Value(0)).current;
   const animLimbico = useRef(new Animated.Value(0)).current;
 
@@ -115,9 +125,38 @@ export default function App() {
     cargarDatos();
   }, []);
 
+  // Timer de meditación
+  useEffect(() => {
+    let interval: any = null;
+    if (meditando && tiempoRestante > 0) {
+      interval = setInterval(() => {
+        setTiempoRestante((prev) => prev - 1);
+      }, 1000);
+    } else if (tiempoRestante === 0 && meditando) {
+      setMeditando(false);
+      Alert.alert(
+        "🧘‍♂️ Meditación Completa",
+        "¡Excelente sesión! Tu corteza prefrontal te lo agradece.",
+      );
+    }
+    return () => clearInterval(interval);
+  }, [meditando, tiempoRestante]);
+
+  const iniciarMeditacion = () => {
+    const mins = parseInt(minutosMeditacion) || 5;
+    setTiempoRestante(mins * 60);
+    setMeditando(true);
+  };
+
+  const formatearTiempo = (segundos: number) => {
+    const m = Math.floor(segundos / 60);
+    const s = segundos % 60;
+    return `${m < 10 ? "0" : ""}${m}:${s < 10 ? "0" : ""}${s}`;
+  };
+
   const cargarDatos = async () => {
     try {
-      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V16");
+      const stored = await AsyncStorage.getItem("NEURO_HABITS_MOBILE_V17");
       if (stored) {
         const parsed = JSON.parse(stored);
         setHabitos(parsed);
@@ -135,7 +174,7 @@ export default function App() {
     actualizarAnimacionCerebro(nuevosHabitos);
     try {
       await AsyncStorage.setItem(
-        "NEURO_HABITS_MOBILE_V16",
+        "NEURO_HABITS_MOBILE_V17",
         JSON.stringify(nuevosHabitos),
       );
     } catch (e) {
@@ -158,7 +197,6 @@ export default function App() {
     const targetLimbico =
       totalChecks > 0 ? Math.min(fallados / totalChecks, 1) : 0;
 
-    // Animación suave y fluida con duración de 800ms
     Animated.parallel([
       Animated.timing(animPrefrontal, {
         toValue: targetPrefrontal,
@@ -251,6 +289,7 @@ export default function App() {
 
   return (
     <View style={styles.mainContainer}>
+      {/* HEADER */}
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => setMenuAbierto(true)}
@@ -268,6 +307,7 @@ export default function App() {
       </View>
 
       <ScrollView style={styles.container}>
+        {/* FRASES MOTIVACIONALES */}
         <TouchableOpacity
           style={styles.quoteCard}
           onPress={cambiarFraseAleatoria}
@@ -276,7 +316,7 @@ export default function App() {
           <Text style={styles.quoteHint}>Toca para cambiar frase 🔄</Text>
         </TouchableOpacity>
 
-        {/* SECCIÓN CEREBRO CON CAPAS SUPERPUESTAS Y ANIMACIÓN GRADUAL */}
+        {/* SECCIÓN CEREBRO CON CAPAS ANIMADAS */}
         <View style={styles.brainCard}>
           <View style={styles.brainHeader}>
             <Text style={styles.brainTitle}>🧠 Respuesta Neuroquímica</Text>
@@ -286,19 +326,14 @@ export default function App() {
           </View>
 
           <View style={styles.brainImageContainer}>
-            {/* Imagen Base Estática */}
             <Image
               source={require("../../assets/images/brain_base.png")}
               style={styles.brainImage}
             />
-
-            {/* Capa Animada: Corteza Prefrontal */}
             <Animated.Image
               source={require("../../assets/images/brain_prefrontal.png")}
               style={[styles.brainOverlay, { opacity: animPrefrontal }]}
             />
-
-            {/* Capa Animada: Sistema Límbico */}
             <Animated.Image
               source={require("../../assets/images/brain_limbico.png")}
               style={[styles.brainOverlay, { opacity: animLimbico }]}
@@ -317,6 +352,7 @@ export default function App() {
           </View>
         </View>
 
+        {/* BOTÓN NUEVO HÁBITO */}
         <TouchableOpacity
           style={styles.btnAddHabit}
           onPress={() => setModalNuevoHabito(true)}
@@ -324,6 +360,7 @@ export default function App() {
           <Text style={styles.btnAddHabitText}>+ Nuevo Hábito</Text>
         </TouchableOpacity>
 
+        {/* PLANILLA DE HÁBITOS */}
         <View style={styles.tableContainer}>
           <View style={styles.tableHeader}>
             <Text style={[styles.headerCell, { flex: 2 }]}>Hábitos</Text>
@@ -384,18 +421,94 @@ export default function App() {
         </Text>
       </ScrollView>
 
+      {/* MENÚ HAMBURGUESA LATERAL (OPCIONES ESCONDIDAS) */}
       <Modal visible={menuAbierto} animationType="slide" transparent={true}>
         <View style={styles.drawerOverlay}>
           <View style={styles.drawerContent}>
             <View style={styles.drawerHeader}>
-              <Text style={styles.drawerTitle}>⚡ Menú & Rangos</Text>
+              <Text style={styles.drawerTitle}>⚡ Menú & Opciones</Text>
               <TouchableOpacity onPress={() => setMenuAbierto(false)}>
                 <Text style={styles.closeButton}>✕</Text>
               </TouchableOpacity>
             </View>
 
             <ScrollView>
-              <Text style={styles.sectionTitle}>🏆 Progreso de Rangos</Text>
+              <TouchableOpacity
+                style={styles.menuItemBtn}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalRangosVisible(true);
+                }}
+              >
+                <Text style={styles.menuItemText}>🏆 Progreso de Rangos</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItemBtn}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalHistorialVisible(true);
+                }}
+              >
+                <Text style={styles.menuItemText}>📜 Historial Mensual</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItemBtn}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalSemanaVisible(true);
+                }}
+              >
+                <Text style={styles.menuItemText}>
+                  📊 Rendimiento Semana Pasada
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItemBtn}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalMeditacionVisible(true);
+                }}
+              >
+                <Text style={styles.menuItemText}>🧘‍♂️ Módulo de Meditación</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL 1: PROGRESO DE RANGOS */}
+      <Modal
+        visible={modalRangosVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
+            >
+              <Text
+                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+              >
+                🏆 Progreso de Rangos
+              </Text>
+              <TouchableOpacity onPress={() => setModalRangosVisible(false)}>
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
               {RANGOS_GOGGINS.map((r) => (
                 <TouchableOpacity
                   key={r.nivel}
@@ -420,6 +533,298 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL 2: HISTORIAL MENSUAL */}
+      <Modal
+        visible={modalHistorialVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
+            >
+              <Text
+                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+              >
+                📜 Historial Mensual (Octubre 2026)
+              </Text>
+              <TouchableOpacity onPress={() => setModalHistorialVisible(false)}>
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              <View style={{ alignItems: "center", marginBottom: 15 }}>
+                <View style={{ flexDirection: "row", marginBottom: 6 }}>
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      backgroundColor: "#00f0ff",
+                      marginRight: 4,
+                    }}
+                  />
+                  <Text
+                    style={{ color: "#94a3b8", fontSize: 10, marginRight: 15 }}
+                  >
+                    Cumplido
+                  </Text>
+                  <View
+                    style={{
+                      width: 12,
+                      height: 12,
+                      backgroundColor: "#ff0055",
+                      marginRight: 4,
+                    }}
+                  />
+                  <Text style={{ color: "#94a3b8", fontSize: 10 }}>
+                    Fallado
+                  </Text>
+                </View>
+                <Text
+                  style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "bold" }}
+                >
+                  Día actual ({new Date().getDate()}):{" "}
+                  {pctPrefrontal > 0
+                    ? `${pctPrefrontal}% Prefrontal`
+                    : `${pctLimbico}% Límbico`}
+                </Text>
+              </View>
+
+              {/* Mini calendario simulado con el día de hoy marcado */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: 6,
+                  marginBottom: 15,
+                }}
+              >
+                {Array.from({ length: 31 }, (_, i) => i + 1).map((dia) => {
+                  const esHoy = dia === new Date().getDate();
+                  const bg = esHoy
+                    ? pctPrefrontal >= pctLimbico
+                      ? "#00f0ff"
+                      : "#ff0055"
+                    : "#1f2937";
+                  const textColor = esHoy ? "#000" : "#94a3b8";
+                  return (
+                    <View
+                      key={dia}
+                      style={{
+                        width: 38,
+                        height: 38,
+                        backgroundColor: bg,
+                        borderRadius: 6,
+                        justifyContent: "center",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Text
+                        style={{
+                          color: textColor,
+                          fontWeight: "bold",
+                          fontSize: 11,
+                        }}
+                      >
+                        {dia}
+                      </Text>
+                      {esHoy && (
+                        <Text style={{ color: textColor, fontSize: 8 }}>
+                          {pctPrefrontal}%
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })}
+              </View>
+
+              <Text
+                style={{ color: "#94a3b8", fontSize: 11, textAlign: "center" }}
+              >
+                Promedio del mes: 73%
+              </Text>
+              <Text
+                style={{
+                  color: "#00f0ff",
+                  fontSize: 11,
+                  textAlign: "center",
+                  marginTop: 4,
+                }}
+              >
+                Últimos 7 días: 91% - ▲ +27 pts vs. los 7 anteriores
+              </Text>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL 3: RENDIMIENTO SEMANA PASADA */}
+      <Modal
+        visible={modalSemanaVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContentGrande}>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
+            >
+              <Text
+                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+              >
+                📊 Rendimiento Semana Anterior
+              </Text>
+              <TouchableOpacity onPress={() => setModalSemanaVisible(false)}>
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView>
+              <Text
+                style={{
+                  color: "#00f0ff",
+                  fontSize: 13,
+                  fontWeight: "bold",
+                  marginBottom: 10,
+                }}
+              >
+                Semana del 19/10 — Dominio prefrontal: 18%
+              </Text>
+              {habitos.length === 0 ? (
+                <Text style={{ color: "#64748b", fontSize: 12 }}>
+                  No hay hábitos registrados para calcular.
+                </Text>
+              ) : (
+                habitos.map((h) => {
+                  // Contamos solo ticks (✔) y filtramos las X
+                  const cumplidosH = h.checks.filter(
+                    (c: string) => c === "YES",
+                  ).length;
+                  return (
+                    <Text
+                      key={h.id}
+                      style={{
+                        color: "#d1d5db",
+                        fontSize: 12,
+                        marginBottom: 6,
+                      }}
+                    >
+                      • {h.nombre}:{" "}
+                      <Text style={{ color: "#00f0ff", fontWeight: "bold" }}>
+                        {cumplidosH}/7 días cumplidos
+                      </Text>
+                    </Text>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL 4: MÓDULO DE MEDITACIÓN */}
+      <Modal
+        visible={modalMeditacionVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentGrande, { alignItems: "center" }]}>
+            <View
+              style={{
+                width: "100%",
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
+            >
+              <Text
+                style={{ color: "#00f0ff", fontSize: 16, fontWeight: "bold" }}
+              >
+                🧘‍♂️ Módulo de Meditación
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setMeditando(false);
+                  setModalMeditacionVisible(false);
+                }}
+              >
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Círculo Timer */}
+            <View style={styles.timerCircle}>
+              <Text style={styles.timerText}>
+                {meditando
+                  ? formatearTiempo(tiempoRestante)
+                  : `${minutosMeditacion}:00`}
+              </Text>
+            </View>
+
+            <View style={{ width: "100%", marginBottom: 15 }}>
+              <Text style={{ color: "#94a3b8", fontSize: 12, marginBottom: 5 }}>
+                ⏱️ Duración (min):
+              </Text>
+              <TextInput
+                style={styles.inputModal}
+                keyboardType="numeric"
+                value={minutosMeditacion}
+                onChangeText={setMinutosMeditacion}
+                editable={!meditando}
+              />
+            </View>
+
+            <TouchableOpacity
+              onPress={
+                meditando ? () => setMeditando(false) : iniciarMeditacion
+              }
+              style={[
+                styles.closeBtnModal,
+                {
+                  backgroundColor: meditando ? "#ff0055" : "#00f0ff",
+                  width: "100%",
+                },
+              ]}
+            >
+              <Text
+                style={{
+                  color: meditando ? "#fff" : "#000",
+                  fontWeight: "bold",
+                }}
+              >
+                {meditando ? "Pausar Meditación" : "▶ Iniciar Meditación"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL FOTO GOGGINS GRANDE */}
       <Modal
         visible={modalGogginsVisible}
         animationType="fade"
@@ -459,6 +864,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL NUEVO HÁBITO */}
       <Modal visible={modalNuevoHabito} animationType="fade" transparent={true}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentGrande}>
@@ -500,6 +906,7 @@ export default function App() {
         </View>
       </Modal>
 
+      {/* MODAL AYUDA */}
       <Modal
         visible={modalAyudaVisible}
         animationType="fade"
@@ -650,7 +1057,6 @@ const styles = StyleSheet.create({
   brainTitle: { color: "#fff", fontSize: 13, fontWeight: "bold" },
   smallQuestion: { color: "#00f0ff", fontWeight: "bold", fontSize: 14 },
 
-  // Contenedor estético con capas superpuestas perfectamente alineadas
   brainImageContainer: {
     width: "100%",
     height: 180,
@@ -660,11 +1066,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: "#111827",
   },
-  brainImage: {
-    width: "100%",
-    height: "100%",
-    resizeMode: "cover",
-  },
+  brainImage: { width: "100%", height: "100%", resizeMode: "cover" },
   brainOverlay: {
     position: "absolute",
     top: 0,
@@ -747,6 +1149,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 30,
   },
+
   drawerOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.7)",
@@ -767,6 +1170,17 @@ const styles = StyleSheet.create({
   },
   drawerTitle: { color: "#00f0ff", fontSize: 18, fontWeight: "bold" },
   closeButton: { color: "#fff", fontSize: 20, fontWeight: "bold" },
+
+  menuItemBtn: {
+    backgroundColor: "#1f2937",
+    padding: 14,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#374151",
+  },
+  menuItemText: { color: "#00f0ff", fontSize: 13, fontWeight: "bold" },
+
   sectionTitle: {
     color: "#fff",
     fontSize: 14,
@@ -794,6 +1208,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   rangoMiniImg: { width: 70, height: 70, borderRadius: 4, marginTop: 6 },
+
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.8)",
@@ -801,24 +1216,19 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContentGrande: {
-    width: "85%",
+    width: "88%",
     backgroundColor: "#111827",
     padding: 20,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "#00f0ff",
+    maxHeight: "80%",
   },
   modalTitle: {
     color: "#00f0ff",
     fontSize: 15,
     fontWeight: "bold",
     marginBottom: 10,
-  },
-  modalText: {
-    color: "#d1d5db",
-    fontSize: 12,
-    lineHeight: 18,
-    marginBottom: 20,
   },
   inputModal: {
     backgroundColor: "#1f2937",
@@ -827,6 +1237,8 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 15,
     fontSize: 12,
+    borderWidth: 1,
+    borderColor: "#374151",
   },
   closeBtnModal: {
     backgroundColor: "#1f2937",
@@ -835,4 +1247,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 10,
   },
+
+  timerCircle: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    borderWidth: 3,
+    borderColor: "#00f0ff",
+    justifyContent: "center",
+    alignItems: "center",
+    alignSelf: "center",
+    marginBottom: 20,
+    backgroundColor: "#090d16",
+  },
+  timerText: { color: "#00f0ff", fontSize: 26, fontWeight: "bold" },
 });
