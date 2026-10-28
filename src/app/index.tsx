@@ -156,7 +156,6 @@ export default function App() {
     string | null
   >(null);
 
-  // Módulo de Meditación
   const [minutosMeditacion, setMinutosMeditacion] = useState<string>("5");
   const [tiempoRestante, setTiempoRestante] = useState<number>(0);
   const [meditando, setMeditando] = useState<boolean>(false);
@@ -252,6 +251,7 @@ export default function App() {
         actualizarAnimacionCerebro(parsedHabitos);
       } else {
         setHabitos([]);
+        actualizarAnimacionCerebro([]);
       }
 
       await AsyncStorage.setItem(
@@ -687,9 +687,15 @@ export default function App() {
         visible={habitoSeleccionadoTexto !== null}
         animationType="fade"
         transparent={true}
+        onRequestClose={() => setHabitoSeleccionadoTexto(null)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setHabitoSeleccionadoTexto(null)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               esHellWeek && { borderColor: "#ff0055" },
@@ -714,8 +720,8 @@ export default function App() {
             >
               <Text style={{ color: "#fff", fontWeight: "bold" }}>CERRAR</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL DE ASCENSO DE RANGO SEMANAL */}
@@ -723,9 +729,17 @@ export default function App() {
         visible={modalAscensoVisible}
         animationType="fade"
         transparent={true}
+        onRequestClose={() => setModalAscensoVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentGrande, { borderColor: "#00f0ff" }]}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalAscensoVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalContentGrande, { borderColor: "#00f0ff" }]}
+          >
             <Text
               style={{
                 color: "#00f0ff",
@@ -754,14 +768,24 @@ export default function App() {
                 ¡ENTENDIDO, A SEGUIR SUFRIENDO!
               </Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MENÚ HAMBURGUESA LATERAL */}
-      <Modal visible={menuAbierto} animationType="slide" transparent={true}>
-        <View style={styles.drawerOverlay}>
-          <View
+      <Modal
+        visible={menuAbierto}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setMenuAbierto(false)}
+      >
+        <TouchableOpacity
+          style={styles.drawerOverlay}
+          activeOpacity={1}
+          onPress={() => setMenuAbierto(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.drawerContent,
               esHellWeek && {
@@ -791,7 +815,10 @@ export default function App() {
                     borderColor: "#ff0055",
                   },
                 ]}
-                onPress={() => setModalRangosVisible(true)}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalRangosVisible(true);
+                }}
               >
                 <Text
                   style={[
@@ -811,7 +838,10 @@ export default function App() {
                     borderColor: "#ff0055",
                   },
                 ]}
-                onPress={() => setModalHistorialVisible(true)}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalHistorialVisible(true);
+                }}
               >
                 <Text
                   style={[
@@ -831,7 +861,10 @@ export default function App() {
                     borderColor: "#ff0055",
                   },
                 ]}
-                onPress={() => setModalSemanaVisible(true)}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalSemanaVisible(true);
+                }}
               >
                 <Text
                   style={[
@@ -851,7 +884,10 @@ export default function App() {
                     borderColor: "#ff0055",
                   },
                 ]}
-                onPress={() => setModalMeditacionVisible(true)}
+                onPress={() => {
+                  setMenuAbierto(false);
+                  setModalMeditacionVisible(true);
+                }}
               >
                 <Text
                   style={[
@@ -863,8 +899,8 @@ export default function App() {
                 </Text>
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL 1: PROGRESO DE RANGOS */}
@@ -872,9 +908,15 @@ export default function App() {
         visible={modalRangosVisible}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => setModalRangosVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalRangosVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               esHellWeek && { borderColor: "#ff0055" },
@@ -932,8 +974,8 @@ export default function App() {
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL 2: HISTORIAL Y MAPA DE CALOR */}
@@ -941,9 +983,15 @@ export default function App() {
         visible={modalHistorialVisible}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => setModalHistorialVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalHistorialVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               esHellWeek && { borderColor: "#ff0055" },
@@ -1049,8 +1097,8 @@ export default function App() {
                 )}
               </View>
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL 3: RENDIMIENTO SEMANA PASADA */}
@@ -1058,9 +1106,15 @@ export default function App() {
         visible={modalSemanaVisible}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => setModalSemanaVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalSemanaVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               esHellWeek && { borderColor: "#ff0055" },
@@ -1129,8 +1183,8 @@ export default function App() {
                 })
               )}
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL 4: MÓDULO DE MEDITACIÓN */}
@@ -1138,9 +1192,21 @@ export default function App() {
         visible={modalMeditacionVisible}
         animationType="slide"
         transparent={true}
+        onRequestClose={() => {
+          setMeditando(false);
+          setModalMeditacionVisible(false);
+        }}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => {
+            setMeditando(false);
+            setModalMeditacionVisible(false);
+          }}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               { alignItems: "center" },
@@ -1228,8 +1294,8 @@ export default function App() {
                 {meditando ? "Pausar Meditación" : "▶ Iniciar Meditación"}
               </Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL ADVERTENCIA MODO LÍMBICO */}
@@ -1237,9 +1303,17 @@ export default function App() {
         visible={modalAlertaLimbicaVisible}
         animationType="fade"
         transparent={true}
+        onRequestClose={() => setModalAlertaLimbicaVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContentGrande, { borderColor: "#ff0055" }]}>
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalAlertaLimbicaVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={[styles.modalContentGrande, { borderColor: "#ff0055" }]}
+          >
             <Text
               style={{
                 color: "#ff0055",
@@ -1270,8 +1344,8 @@ export default function App() {
                 ACEPTO EL RETO
               </Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL FOTO GOGGINS GRANDE */}
@@ -1279,9 +1353,15 @@ export default function App() {
         visible={modalGogginsVisible}
         animationType="fade"
         transparent={true}
+        onRequestClose={() => setModalGogginsVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalGogginsVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               { alignItems: "center" },
@@ -1311,12 +1391,17 @@ export default function App() {
             >
               <Text style={{ color: "#fff", fontWeight: "bold" }}>CERRAR</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       {/* MODAL NUEVO HÁBITO */}
-      <Modal visible={modalNuevoHabito} animationType="fade" transparent={true}>
+      <Modal
+        visible={modalNuevoHabito}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setModalNuevoHabito(false)}
+      >
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.modalOverlay}
@@ -1338,6 +1423,7 @@ export default function App() {
               placeholderTextColor="#64748b"
               value={nombreNuevoHabito}
               onChangeText={setNombreNuevoHabito}
+              autoFocus={true}
             />
             <View
               style={{ flexDirection: "row", justifyContent: "space-between" }}
@@ -1383,9 +1469,15 @@ export default function App() {
         visible={modalAyudaVisible}
         animationType="fade"
         transparent={true}
+        onRequestClose={() => setModalAyudaVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setModalAyudaVisible(false)}
+        >
+          <TouchableOpacity
+            activeOpacity={1}
             style={[
               styles.modalContentGrande,
               { maxHeight: "85%" },
@@ -1535,8 +1627,8 @@ export default function App() {
                 </Text>
               </TouchableOpacity>
             </ScrollView>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
     </View>
   );
