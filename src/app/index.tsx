@@ -4,7 +4,9 @@ import {
   Alert,
   Animated,
   Image,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -154,11 +156,6 @@ export default function App() {
     string | null
   >(null);
 
-  // Bitácora / Journaling diario
-  const [bitacoraTexto, setBitacoraTexto] = useState<string>("");
-  const [modalBitacoraVisible, setModalBitacoraVisible] =
-    useState<boolean>(false);
-
   // Módulo de Meditación
   const [minutosMeditacion, setMinutosMeditacion] = useState<string>("5");
   const [tiempoRestante, setTiempoRestante] = useState<number>(0);
@@ -169,37 +166,7 @@ export default function App() {
 
   useEffect(() => {
     verificarYReiniciarSemana();
-    cargarBitacora();
   }, []);
-
-  const cargarBitacora = async () => {
-    try {
-      const hoyKey = new Date().toISOString().split("T")[0];
-      const saved = await AsyncStorage.getItem(
-        `NEURO_HABITS_JOURNAL_${hoyKey}`,
-      );
-      if (saved) setBitacoraTexto(saved);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const guardarBitacora = async () => {
-    try {
-      const hoyKey = new Date().toISOString().split("T")[0];
-      await AsyncStorage.setItem(
-        `NEURO_HABITS_JOURNAL_${hoyKey}`,
-        bitacoraTexto,
-      );
-      setModalBitacoraVisible(false);
-      Alert.alert(
-        "📝 Bitácora Guardada",
-        "Tus pensamientos de combate quedaron registrados. ¡A seguir!",
-      );
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   useEffect(() => {
     let interval: any = null;
@@ -852,7 +819,7 @@ export default function App() {
                     esHellWeek && { color: "#ff0055" },
                   ]}
                 >
-                  📜 Historial Mensual
+                  📜 Historial & Mapa de Calor
                 </Text>
               </TouchableOpacity>
 
@@ -893,26 +860,6 @@ export default function App() {
                   ]}
                 >
                   🧘‍♂️ Módulo de Meditación
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.menuItemBtn,
-                  esHellWeek && {
-                    backgroundColor: "#1f1012",
-                    borderColor: "#ff0055",
-                  },
-                ]}
-                onPress={() => setModalBitacoraVisible(true)}
-              >
-                <Text
-                  style={[
-                    styles.menuItemText,
-                    esHellWeek && { color: "#ff0055" },
-                  ]}
-                >
-                  📝 Bitácora / Journaling
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -989,7 +936,7 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 2: HISTORIAL MENSUAL DINÁMICO */}
+      {/* MODAL 2: HISTORIAL Y MAPA DE CALOR */}
       <Modal
         visible={modalHistorialVisible}
         animationType="slide"
@@ -1013,7 +960,7 @@ export default function App() {
               <Text
                 style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
               >
-                📜 Historial ({nombreMes})
+                📜 Mapa de Calor ({nombreMes})
               </Text>
               <TouchableOpacity onPress={() => setModalHistorialVisible(false)}>
                 <Text
@@ -1030,14 +977,14 @@ export default function App() {
                     style={{
                       width: 12,
                       height: 12,
-                      backgroundColor: esHellWeek ? "#00ff66" : "#00f0ff",
+                      backgroundColor: "#00ff66",
                       marginRight: 4,
                     }}
                   />
                   <Text
                     style={{ color: "#94a3b8", fontSize: 10, marginRight: 15 }}
                   >
-                    Cumplido
+                    Estable / Cumplido
                   </Text>
                   <View
                     style={{
@@ -1048,17 +995,9 @@ export default function App() {
                     }}
                   />
                   <Text style={{ color: "#94a3b8", fontSize: 10 }}>
-                    Fallado
+                    Fallado / Límbico
                   </Text>
                 </View>
-                <Text
-                  style={{ color: "#e2e8f0", fontSize: 12, fontWeight: "bold" }}
-                >
-                  Día actual ({hoy.getDate()}):{" "}
-                  {pctPrefrontal >= pctLimbico
-                    ? `${pctPrefrontal}% Prefrontal`
-                    : `${pctLimbico}% Límbico`}
-                </Text>
               </View>
 
               <View
@@ -1075,11 +1014,11 @@ export default function App() {
                     const esHoy = dia === hoy.getDate();
                     const bg = esHoy
                       ? pctPrefrontal >= pctLimbico
-                        ? esHellWeek
-                          ? "#00ff66"
-                          : "#00f0ff"
+                        ? "#00ff66"
                         : "#ff0055"
-                      : "#1f2937";
+                      : dia < hoy.getDate()
+                        ? "#1f2937"
+                        : "#111827";
                     const textColor = esHoy ? "#000" : "#94a3b8";
                     return (
                       <View
@@ -1091,6 +1030,8 @@ export default function App() {
                           borderRadius: 6,
                           justifyContent: "center",
                           alignItems: "center",
+                          borderWidth: esHoy ? 2 : 0,
+                          borderColor: "#fff",
                         }}
                       >
                         <Text
@@ -1102,14 +1043,6 @@ export default function App() {
                         >
                           {dia}
                         </Text>
-                        {esHoy && (
-                          <Text style={{ color: textColor, fontSize: 8 }}>
-                            {pctPrefrontal >= pctLimbico
-                              ? pctPrefrontal
-                              : pctLimbico}
-                            %
-                          </Text>
-                        )}
                       </View>
                     );
                   },
@@ -1299,75 +1232,6 @@ export default function App() {
         </View>
       </Modal>
 
-      {/* MODAL 5: BITÁCORA / JOURNALING */}
-      <Modal
-        visible={modalBitacoraVisible}
-        animationType="slide"
-        transparent={true}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContentGrande,
-              esHellWeek && { borderColor: "#ff0055" },
-            ]}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: 15,
-              }}
-            >
-              <Text
-                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
-              >
-                📝 Bitácora de Combate
-              </Text>
-              <TouchableOpacity onPress={() => setModalBitacoraVisible(false)}>
-                <Text
-                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
-                >
-                  ✕
-                </Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 10 }}>
-              Escribe tus pensamientos, por qué fallaste hoy o cómo superaste tu
-              entrenamiento:
-            </Text>
-            <TextInput
-              style={[
-                styles.inputModal,
-                { height: 120, textAlignVertical: "top" },
-              ]}
-              multiline
-              placeholder="Ej: Hoy entrené pesado, el sistema límbico quiso ganar pero la disciplina pudo más..."
-              placeholderTextColor="#64748b"
-              value={bitacoraTexto}
-              onChangeText={setBitacoraTexto}
-            />
-            <TouchableOpacity
-              onPress={guardarBitacora}
-              style={[
-                styles.closeBtnModal,
-                { backgroundColor: esHellWeek ? "#ff0055" : "#00f0ff" },
-              ]}
-            >
-              <Text
-                style={{
-                  color: esHellWeek ? "#fff" : "#000",
-                  fontWeight: "bold",
-                }}
-              >
-                GUARDAR BITÁCORA
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       {/* MODAL ADVERTENCIA MODO LÍMBICO */}
       <Modal
         visible={modalAlertaLimbicaVisible}
@@ -1453,7 +1317,10 @@ export default function App() {
 
       {/* MODAL NUEVO HÁBITO */}
       <Modal visible={modalNuevoHabito} animationType="fade" transparent={true}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={styles.modalOverlay}
+        >
           <View
             style={[
               styles.modalContentGrande,
@@ -1508,7 +1375,7 @@ export default function App() {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* MODAL AYUDA */}
@@ -1909,7 +1776,7 @@ const styles = StyleSheet.create({
     width: "88%",
     backgroundColor: "#111827",
     padding: 20,
-    borderRadius: "10px" as any,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#00f0ff",
     maxHeight: "80%",
