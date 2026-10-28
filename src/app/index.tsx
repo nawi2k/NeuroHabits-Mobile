@@ -115,7 +115,7 @@ interface Rango {
 }
 
 const obtenerNumeroSemana = (d: Date) => {
-  const date = new Date(d.getTime());
+  const date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + 3 - ((date.getDay() + 6) % 7));
   const week1 = new Date(date.getFullYear(), 0, 4);
@@ -304,7 +304,7 @@ export default function App() {
       }),
     ]).start();
 
-    if (fallados > cumplidos && fallados >= 3) {
+    if (fallados > cumplidos && fallados >= 4 && totalChecks >= 10) {
       try {
         const hoyKey = new Date().toISOString().split("T")[0];
         const yaMostradaHoy = await AsyncStorage.getItem(
@@ -324,10 +324,20 @@ export default function App() {
     let racha = 0;
     const diaActualIndex =
       new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
-    for (let i = diaActualIndex; i >= 0; i--) {
+
+    let startIndex = diaActualIndex;
+    if (
+      checks[diaActualIndex] === null &&
+      diaActualIndex > 0 &&
+      checks[diaActualIndex - 1] === "YES"
+    ) {
+      startIndex = diaActualIndex - 1;
+    }
+
+    for (let i = startIndex; i >= 0; i--) {
       if (checks[i] === "YES") {
         racha++;
-      } else if (i !== diaActualIndex) {
+      } else if (i !== diaActualIndex && checks[i] !== "YES") {
         break;
       }
     }
@@ -340,17 +350,26 @@ export default function App() {
 
     if (actual === null) {
       nuevos[hIdx].checks[dIdx] = "YES";
-      const frase =
-        FRASES_GOGGINS_SUCCESS[
-          Math.floor(Math.random() * FRASES_GOGGINS_SUCCESS.length)
-        ];
+      let frase = "";
+      do {
+        frase =
+          FRASES_GOGGINS_SUCCESS[
+            Math.floor(Math.random() * FRASES_GOGGINS_SUCCESS.length)
+          ];
+      } while (
+        `"${frase}"` === fraseActual &&
+        FRASES_GOGGINS_SUCCESS.length > 1
+      );
       setFraseActual(`"${frase}"`);
     } else if (actual === "YES") {
       nuevos[hIdx].checks[dIdx] = "NO";
-      const frase =
-        FRASES_GOGGINS_FAIL[
-          Math.floor(Math.random() * FRASES_GOGGINS_FAIL.length)
-        ];
+      let frase = "";
+      do {
+        frase =
+          FRASES_GOGGINS_FAIL[
+            Math.floor(Math.random() * FRASES_GOGGINS_FAIL.length)
+          ];
+      } while (`"${frase}"` === fraseActual && FRASES_GOGGINS_FAIL.length > 1);
       setFraseActual(`"${frase}"`);
     } else {
       nuevos[hIdx].checks[dIdx] = null;
@@ -360,8 +379,12 @@ export default function App() {
   };
 
   const cambiarFraseAleatoria = () => {
-    const idx = Math.floor(Math.random() * LISTA_FILOSOFIA.length);
-    setFraseActual(LISTA_FILOSOFIA[idx]);
+    let nuevaFrase = "";
+    do {
+      const idx = Math.floor(Math.random() * LISTA_FILOSOFIA.length);
+      nuevaFrase = LISTA_FILOSOFIA[idx];
+    } while (nuevaFrase === fraseActual && LISTA_FILOSOFIA.length > 1);
+    setFraseActual(nuevaFrase);
   };
 
   const agregarHabito = () => {
@@ -419,7 +442,8 @@ export default function App() {
   const pctLimbico =
     totalChecks > 0 ? Math.round((fallados / totalChecks) * 100) : 0;
 
-  const esHellWeek = pctLimbico > pctPrefrontal && pctLimbico > 30;
+  const esHellWeek =
+    totalChecks > 0 && pctLimbico > pctPrefrontal && pctLimbico > 30;
 
   return (
     <View
