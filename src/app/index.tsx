@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as Notifications from "expo-notifications";
 import { useEffect, useRef, useState } from "react";
 import {
   Alert,
@@ -15,6 +16,16 @@ import {
   Vibration,
   View,
 } from "react-native";
+
+// Configurar comportamiento de notificaciones con la app abierta
+Notifications.setNotificationHandler({
+  handleNotification: async () =>
+    ({
+      shouldShowAlert: true,
+      shouldPlaySound: true,
+      shouldSetBadge: false,
+    }) as any,
+});
 
 const DIAS = ["L", "M", "X", "J", "V", "S", "D"];
 
@@ -164,8 +175,44 @@ export default function App() {
   const animLimbico = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    configurarNotificacionesDiarias();
     verificarYReiniciarSemana();
   }, []);
+
+  const configurarNotificacionesDiarias = async () => {
+    try {
+      const { status: existingStatus } =
+        await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== "granted") {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== "granted") {
+        return;
+      }
+
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: "💀 ¡Hora de rendir cuentas, Stay Hard!",
+          subtitle: "Neuro Habits",
+          body: "¿Ya actualizaste tus hábitos hoy o te ganó el sistema límbico?",
+          sound: true,
+        },
+        trigger: {
+          hour: 21,
+          minute: 0,
+          repeats: true,
+        } as any,
+      });
+    } catch (e) {
+      console.log("Error configurando notificaciones:", e);
+    }
+  };
 
   useEffect(() => {
     let interval: any = null;
