@@ -34,7 +34,7 @@ const LISTA_FILOSOFIA = [
   "«Domina tu mente, sé el hombre más disciplinado que haya existido en mi entorno. Que nadie, ni mis impulsos ni mi pasado, decida por mí.» — Nahuel Sandoval",
   "«Si le pides a Dios ganar un maratón, te enviará un par de zapatos, no una medalla.»",
   "«Ese antojo no te hizo perder músculo o engordar, pero sí te recordó que aún no dominas tu mente.»",
-  "«Когда la cabeza dice que pares, estás en un 40% de tu verdadero potencial.» — David Goggins",
+  "«Cuando la cabeza dice que pares, estás en un 40% de tu verdadero potencial.» — David Goggins",
   "«¿Quién sos cuando nadie te está mirando?»",
   "«El día que el hombre supere sus deseos y adicciones, ese día el hombre se vuelve libre de verdad para lograr cosas increíbles y conocer su verdadero potencial.»",
   "«No pares, no te conformes y cada día aunque te sientas bien. Busca un punto para mejorar.» — Nahuel Sandoval",
@@ -150,12 +150,16 @@ export default function App() {
     useState<boolean>(false);
   const [mensajeAscenso, setMensajeAscenso] = useState<string>("");
 
-  const [alertaLimbicaYaMostrada, setAlertaLimbicaYaMostrada] =
-    useState<boolean>(false);
   const [habitoSeleccionadoTexto, setHabitoSeleccionadoTexto] = useState<
     string | null
   >(null);
 
+  // Bitácora / Journaling diario
+  const [bitacoraTexto, setBitacoraTexto] = useState<string>("");
+  const [modalBitacoraVisible, setModalBitacoraVisible] =
+    useState<boolean>(false);
+
+  // Módulo de Meditación
   const [minutosMeditacion, setMinutosMeditacion] = useState<string>("5");
   const [tiempoRestante, setTiempoRestante] = useState<number>(0);
   const [meditando, setMeditando] = useState<boolean>(false);
@@ -165,7 +169,37 @@ export default function App() {
 
   useEffect(() => {
     verificarYReiniciarSemana();
+    cargarBitacora();
   }, []);
+
+  const cargarBitacora = async () => {
+    try {
+      const hoyKey = new Date().toISOString().split("T")[0];
+      const saved = await AsyncStorage.getItem(
+        `NEURO_HABITS_JOURNAL_${hoyKey}`,
+      );
+      if (saved) setBitacoraTexto(saved);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const guardarBitacora = async () => {
+    try {
+      const hoyKey = new Date().toISOString().split("T")[0];
+      await AsyncStorage.setItem(
+        `NEURO_HABITS_JOURNAL_${hoyKey}`,
+        bitacoraTexto,
+      );
+      setModalBitacoraVisible(false);
+      Alert.alert(
+        "📝 Bitácora Guardada",
+        "Tus pensamientos de combate quedaron registrados. ¡A seguir!",
+      );
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   useEffect(() => {
     let interval: any = null;
@@ -275,7 +309,7 @@ export default function App() {
     }
   };
 
-  const actualizarAnimacionCerebro = (listaHabitos: Habito[]) => {
+  const actualizarAnimacionCerebro = async (listaHabitos: Habito[]) => {
     const totalChecks = listaHabitos.length * 7;
     let cumplidos = 0;
     let fallados = 0;
@@ -304,15 +338,33 @@ export default function App() {
     ]).start();
 
     if (fallados > cumplidos && fallados >= 3) {
-      if (!alertaLimbicaYaMostrada) {
-        setModalAlertaLimbicaVisible(true);
-        setAlertaLimbicaYaMostrada(true);
-      }
-    } else {
-      if (cumplidos >= fallados) {
-        setAlertaLimbicaYaMostrada(false);
+      try {
+        const hoyKey = new Date().toISOString().split("T")[0];
+        const yaMostradaHoy = await AsyncStorage.getItem(
+          `NEURO_ALERTA_${hoyKey}`,
+        );
+        if (!yaMostradaHoy) {
+          setModalAlertaLimbicaVisible(true);
+          await AsyncStorage.setItem(`NEURO_ALERTA_${hoyKey}`, "true");
+        }
+      } catch (e) {
+        console.error(e);
       }
     }
+  };
+
+  const calcularRachaHabito = (checks: (string | null)[]) => {
+    let racha = 0;
+    const diaActualIndex =
+      new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+    for (let i = diaActualIndex; i >= 0; i--) {
+      if (checks[i] === "YES") {
+        racha++;
+      } else if (i !== diaActualIndex) {
+        break;
+      }
+    }
+    return racha;
   };
 
   const manejarClickCelda = (hIdx: number, dIdx: number) => {
@@ -564,7 +616,7 @@ export default function App() {
                 esHellWeek && { color: "#ff99bb" },
               ]}
             >
-              Hábitos
+              Hábitos & Rachas
             </Text>
             {DIAS.map((d: string, i: number) => (
               <Text
@@ -581,71 +633,77 @@ export default function App() {
               No hay hábitos. ¡Agregá uno con el botón de arriba!
             </Text>
           ) : (
-            habitos.map((h: Habito, hIdx: number) => (
-              <View key={h.id} style={styles.tableRow}>
-                <TouchableOpacity
-                  style={{ flex: 2 }}
-                  onPress={() => setHabitoSeleccionadoTexto(h.nombre)}
-                >
-                  <Text
-                    style={[
-                      styles.habitoNombre,
-                      esHellWeek && { color: "#fff" },
-                    ]}
-                    numberOfLines={1}
+            habitos.map((h: Habito, hIdx: number) => {
+              const racha = calcularRachaHabito(h.checks);
+              return (
+                <View key={h.id} style={styles.tableRow}>
+                  <TouchableOpacity
+                    style={{ flex: 2 }}
+                    onPress={() => setHabitoSeleccionadoTexto(h.nombre)}
                   >
-                    {h.nombre}
-                  </Text>
-                </TouchableOpacity>
-
-                {h.checks.map((chk: string | null, dIdx: number) => {
-                  let cellStyle: any = styles.cell;
-                  let simbol = "";
-
-                  if (chk === "YES") {
-                    // CUMPLIDO: Verde brillante furioso (#00ff66) durante Hell Week para destacar contra el rojo
-                    cellStyle = [
-                      styles.cell,
-                      styles.cellYes,
-                      esHellWeek && {
-                        backgroundColor: "rgba(0, 255, 102, 0.25)",
-                        borderColor: "#00ff66",
-                      },
-                    ];
-                    simbol = "✔";
-                  } else if (chk === "NO") {
-                    // FALLADO: Rojo sangre
-                    cellStyle = [styles.cell, styles.cellNo];
-                    simbol = "✖";
-                  }
-
-                  return (
-                    <TouchableOpacity
-                      key={dIdx}
-                      style={cellStyle}
-                      onPress={() => manejarClickCelda(hIdx, dIdx)}
+                    <Text
+                      style={[
+                        styles.habitoNombre,
+                        esHellWeek && { color: "#fff" },
+                      ]}
+                      numberOfLines={1}
                     >
-                      <Text
-                        style={[
-                          styles.cellText,
-                          esHellWeek && chk === "YES" && { color: "#00ff66" },
-                        ]}
-                      >
-                        {simbol}
+                      {h.nombre}
+                    </Text>
+                    {racha > 0 && (
+                      <Text style={{ color: "#00ff66", fontSize: 9 }}>
+                        🔥 Racha: {racha} días
                       </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-                <TouchableOpacity
-                  onPress={() => confirmarEliminarHabito(hIdx)}
-                  style={{ paddingLeft: 6 }}
-                >
-                  <Text style={{ color: "#ff0055", fontWeight: "bold" }}>
-                    ✕
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            ))
+                    )}
+                  </TouchableOpacity>
+
+                  {h.checks.map((chk: string | null, dIdx: number) => {
+                    let cellStyle: any = styles.cell;
+                    let simbol = "";
+
+                    if (chk === "YES") {
+                      cellStyle = [
+                        styles.cell,
+                        styles.cellYes,
+                        esHellWeek && {
+                          backgroundColor: "rgba(0, 255, 102, 0.25)",
+                          borderColor: "#00ff66",
+                        },
+                      ];
+                      simbol = "✔";
+                    } else if (chk === "NO") {
+                      cellStyle = [styles.cell, styles.cellNo];
+                      simbol = "✖";
+                    }
+
+                    return (
+                      <TouchableOpacity
+                        key={dIdx}
+                        style={cellStyle}
+                        onPress={() => manejarClickCelda(hIdx, dIdx)}
+                      >
+                        <Text
+                          style={[
+                            styles.cellText,
+                            esHellWeek && chk === "YES" && { color: "#00ff66" },
+                          ]}
+                        >
+                          {simbol}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                  <TouchableOpacity
+                    onPress={() => confirmarEliminarHabito(hIdx)}
+                    style={{ paddingLeft: 6 }}
+                  >
+                    <Text style={{ color: "#ff0055", fontWeight: "bold" }}>
+                      ✕
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              );
+            })
           )}
         </View>
 
@@ -835,6 +893,26 @@ export default function App() {
                   ]}
                 >
                   🧘‍♂️ Módulo de Meditación
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.menuItemBtn,
+                  esHellWeek && {
+                    backgroundColor: "#1f1012",
+                    borderColor: "#ff0055",
+                  },
+                ]}
+                onPress={() => setModalBitacoraVisible(true)}
+              >
+                <Text
+                  style={[
+                    styles.menuItemText,
+                    esHellWeek && { color: "#ff0055" },
+                  ]}
+                >
+                  📝 Bitácora / Journaling
                 </Text>
               </TouchableOpacity>
             </ScrollView>
@@ -1215,6 +1293,75 @@ export default function App() {
                 }}
               >
                 {meditando ? "Pausar Meditación" : "▶ Iniciar Meditación"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* MODAL 5: BITÁCORA / JOURNALING */}
+      <Modal
+        visible={modalBitacoraVisible}
+        animationType="slide"
+        transparent={true}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalContentGrande,
+              esHellWeek && { borderColor: "#ff0055" },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 15,
+              }}
+            >
+              <Text
+                style={[styles.modalTitle, esHellWeek && { color: "#ff0055" }]}
+              >
+                📝 Bitácora de Combate
+              </Text>
+              <TouchableOpacity onPress={() => setModalBitacoraVisible(false)}>
+                <Text
+                  style={{ color: "#fff", fontSize: 18, fontWeight: "bold" }}
+                >
+                  ✕
+                </Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={{ color: "#94a3b8", fontSize: 11, marginBottom: 10 }}>
+              Escribe tus pensamientos, por qué fallaste hoy o cómo superaste tu
+              entrenamiento:
+            </Text>
+            <TextInput
+              style={[
+                styles.inputModal,
+                { height: 120, textAlignVertical: "top" },
+              ]}
+              multiline
+              placeholder="Ej: Hoy entrené pesado, el sistema límbico quiso ganar pero la disciplina pudo más..."
+              placeholderTextColor="#64748b"
+              value={bitacoraTexto}
+              onChangeText={setBitacoraTexto}
+            />
+            <TouchableOpacity
+              onPress={guardarBitacora}
+              style={[
+                styles.closeBtnModal,
+                { backgroundColor: esHellWeek ? "#ff0055" : "#00f0ff" },
+              ]}
+            >
+              <Text
+                style={{
+                  color: esHellWeek ? "#fff" : "#000",
+                  fontWeight: "bold",
+                }}
+              >
+                GUARDAR BITÁCORA
               </Text>
             </TouchableOpacity>
           </View>
@@ -1762,7 +1909,7 @@ const styles = StyleSheet.create({
     width: "88%",
     backgroundColor: "#111827",
     padding: 20,
-    borderRadius: 10,
+    borderRadius: "10px" as any,
     borderWidth: 1,
     borderColor: "#00f0ff",
     maxHeight: "80%",
